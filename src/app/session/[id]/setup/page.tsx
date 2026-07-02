@@ -24,11 +24,12 @@ const VOICE_PRESETS = [
   { id: 'child-friendly',   label: 'Energetic (Rachel)',         origin: '🇺🇸', gender: 'F' },
 ];
 
-type SetupStep = 'placement' | 'background' | 'voice' | 'preview';
+type SetupStep = 'placement' | 'background' | 'voice' | 'script' | 'preview';
 const STEPS: { id: SetupStep; label: string; icon: typeof Move }[] = [
   { id: 'placement',  label: 'Stage Placement',   icon: Move },
   { id: 'background', label: 'Background Setup',  icon: Image },
   { id: 'voice',      label: 'Voice Selection',   icon: Volume2 },
+  { id: 'script',     label: 'Q&A Script Setup',  icon: Sparkles },
   { id: 'preview',    label: 'Preview & Launch',   icon: Play },
 ];
 
@@ -503,26 +504,29 @@ export default function SetupPage() {
                 </motion.div>
               )}
 
-              {/* ── STEP: Preview & Launch ───────────── */}
-              {activeStep === 'preview' && (
-                <motion.div key="preview" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-5">
+              {/* ── STEP: Q&A Script Setup ───────────── */}
+              {activeStep === 'script' && (
+                <motion.div key="script" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-5">
                   <div>
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2"><Sparkles size={14} className="text-emerald-400" /> Preview & Launch</h3>
-                    <p className="text-[11px] text-slate-400 mt-1">Review your configuration, test, then launch into the live session.</p>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2"><Sparkles size={14} className="text-emerald-400" /> Q&A Script Setup</h3>
+                    <p className="text-[11px] text-slate-400 mt-1">Configure preset script lessons or create custom Q&A answers.</p>
                   </div>
 
-                  {/* Configuration summary */}
-                  <div className="space-y-2 bg-white/[0.02] p-4 rounded-xl border border-white/5">
-                    <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Stage Configuration</div>
-                    <div className="space-y-1.5">
-                      <div className="text-xs flex justify-between"><span className="text-slate-400">Character</span><span className="text-white font-medium">{character.emoji} {character.name}</span></div>
-                      <div className="text-xs flex justify-between"><span className="text-slate-400">Background</span><span className="text-cyan-300 font-medium capitalize">{backgroundMode}</span></div>
-                      <div className="text-xs flex justify-between"><span className="text-slate-400">Voice Preset</span><span className="text-amber-300 font-medium">{VOICE_PRESETS.find(v => v.id === selectedVoice)?.label || 'Auto'}</span></div>
-                      <div className="text-xs flex justify-between"><span className="text-slate-400">Scale</span><span className="text-indigo-300 font-mono">{characterScale.toFixed(2)}x</span></div>
-                      <div className="text-xs flex justify-between"><span className="text-slate-400">Position</span><span className="text-indigo-300 font-mono">({characterPosition.x.toFixed(1)}, {characterPosition.y.toFixed(1)}, {characterPosition.z.toFixed(1)})</span></div>
-                      <div className="text-xs flex justify-between"><span className="text-slate-400">Human Layer</span><span className={showSelfieSegmentation ? 'text-emerald-400' : 'text-slate-500'}>{showSelfieSegmentation ? 'Enabled' : 'Disabled'}</span></div>
-                      <div className="text-xs flex justify-between"><span className="text-slate-400">Speech Rate</span><span className="text-indigo-300 font-mono">{speechRate.toFixed(2)}x</span></div>
-                    </div>
+                  {/* Teacher Guide Banner */}
+                  <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-3.5 space-y-2">
+                    <h4 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                      💡 Teacher Setup Guide
+                    </h4>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      Follow these steps to configure your interactive classroom experience:
+                    </p>
+                    <ul className="text-[10px] text-slate-400 space-y-1.5 list-decimal list-inside pl-1">
+                      <li>Use <strong className="text-white">Stage Placement</strong> (Step 1) to position, rotate, and scale the 3D character.</li>
+                      <li>Use <strong className="text-white">Background Setup</strong> (Step 2) to mirror the feed, blur the room, or enable <strong className="text-white">Selfie Segmentation</strong> (which overlays you in front of the background, behind the character!).</li>
+                      <li>Select a voice accent on <strong className="text-white">Voice Selection</strong> (Step 3).</li>
+                      <li>Choose a preset script, or click <strong className="text-white">+ Add Script</strong> to write custom Q&As. <strong className="text-white">Tip:</strong> Write <code className="text-amber-300">*growl*</code> or <code className="text-amber-300">*roar*</code> in answers to trigger realistic animal sound effects!</li>
+                      <li>Click <strong className="text-white">Launch Live Session</strong>. Your main window becomes the clean projector scene, and a separate popup control window opens for triggering answers with keys <code className="text-indigo-300">1</code>–<code className="text-indigo-300">9</code>!</li>
+                    </ul>
                   </div>
 
                   {/* Template Selection */}
@@ -630,6 +634,31 @@ export default function SetupPage() {
                         </button>
                       </div>
                     )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── STEP: Preview & Launch ───────────── */}
+              {activeStep === 'preview' && (
+                <motion.div key="preview" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-5">
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2"><Sparkles size={14} className="text-emerald-400" /> Preview & Launch</h3>
+                    <p className="text-[11px] text-slate-400 mt-1">Review your configuration, test, then launch into the live session.</p>
+                  </div>
+
+                  {/* Configuration summary */}
+                  <div className="space-y-2 bg-white/[0.02] p-4 rounded-xl border border-white/5">
+                    <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Stage Configuration</div>
+                    <div className="space-y-1.5">
+                      <div className="text-xs flex justify-between"><span className="text-slate-400">Character</span><span className="text-white font-medium">{character.emoji} {character.name}</span></div>
+                      <div className="text-xs flex justify-between"><span className="text-slate-400">Background</span><span className="text-cyan-300 font-medium capitalize">{backgroundMode}</span></div>
+                      <div className="text-xs flex justify-between"><span className="text-slate-400">Voice Preset</span><span className="text-amber-300 font-medium">{VOICE_PRESETS.find(v => v.id === selectedVoice)?.label || 'Auto'}</span></div>
+                      <div className="text-xs flex justify-between"><span className="text-slate-400">Script</span><span className="text-emerald-300 font-medium">{selectedTemplate?.title || 'No Script Template'}</span></div>
+                      <div className="text-xs flex justify-between"><span className="text-slate-400">Scale</span><span className="text-indigo-300 font-mono">{characterScale.toFixed(2)}x</span></div>
+                      <div className="text-xs flex justify-between"><span className="text-slate-400">Position</span><span className="text-indigo-300 font-mono">({characterPosition.x.toFixed(1)}, {characterPosition.y.toFixed(1)}, {characterPosition.z.toFixed(1)})</span></div>
+                      <div className="text-xs flex justify-between"><span className="text-slate-400">Human Layer</span><span className={showSelfieSegmentation ? 'text-emerald-400' : 'text-slate-500'}>{showSelfieSegmentation ? 'Enabled' : 'Disabled'}</span></div>
+                      <div className="text-xs flex justify-between"><span className="text-slate-400">Speech Rate</span><span className="text-indigo-300 font-mono">{speechRate.toFixed(2)}x</span></div>
+                    </div>
                   </div>
 
                   {/* Test actions */}

@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Search, Play, Filter, Sparkles } from 'lucide-react';
 import { Plus, Trash2 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { getCharacters, deleteCustomCharacter, CATEGORY_LABELS, type CharacterCategory, type Character } from '@/lib/characters/characterData';
+import { getCharacters, deleteCharacter, CATEGORY_LABELS, type CharacterCategory, type Character } from '@/lib/characters/characterData';
 
 const CATEGORIES: { value: CharacterCategory | 'all'; label: string }[] = [
   { value: 'all',          label: 'All'             },
@@ -22,6 +22,7 @@ export default function CharactersPage() {
   const [category, setCategory] = useState<CharacterCategory | 'all'>('all');
   const [characters, setCharacters] = useState<Character[]>([]);
   const [visibleList, setVisibleList] = useState<string[] | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     async function loadVisibleCharacters() {
@@ -31,7 +32,9 @@ export default function CharactersPage() {
           const body = await res.json();
           if (body.profile) {
             // Admins see all; teachers see approved list
-            if (body.profile.role !== 'super_admin') {
+            if (body.profile.role === 'super_admin') {
+              setIsAdmin(true);
+            } else {
               setVisibleList(body.profile.visible_characters || []);
             }
           }
@@ -47,8 +50,8 @@ export default function CharactersPage() {
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (confirm('Are you sure you want to delete this custom character?')) {
-      deleteCustomCharacter(id.replace('custom_char_', ''));
+    if (confirm('Are you sure you want to delete this character? Once deleted, it will be hidden from everyone.')) {
+      deleteCharacter(id);
       setCharacters(getCharacters());
     }
   };
@@ -133,7 +136,7 @@ export default function CharactersPage() {
               <div className={`h-24 flex items-center justify-center bg-gradient-to-br ${char.thumbnailColor} relative`}>
                 <span className="text-6xl">{char.emoji}</span>
                 <div className="absolute top-3 right-3 flex items-center gap-2">
-                  {char.isCustom && (
+                  {(char.isCustom || isAdmin) && (
                     <button onClick={(e) => handleDelete(char.id, e)} className="p-1.5 bg-red-500/80 hover:bg-red-500 text-white rounded-full transition-colors">
                       <Trash2 size={12} />
                     </button>

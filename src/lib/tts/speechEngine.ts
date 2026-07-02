@@ -233,8 +233,8 @@ class SpeechEngine {
       const lowerText = text.toLowerCase();
       if (lowerText.includes('*low growl*') || lowerText.includes('*growl*') || lowerText.includes('*roar*')) {
         const soundUrl = charId === 'lion'
-          ? 'https://www.soundjay.com/beast/sounds/lion-roar-01.mp3'
-          : 'https://www.soundjay.com/beast/sounds/tiger-growl-01.mp3';
+          ? 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Panthera_leo_roar.ogg'
+          : 'https://upload.wikimedia.org/wikipedia/commons/8/81/Tiger_Growl.ogg';
         const audioSfx = new Audio(soundUrl);
         audioSfx.volume = 0.8;
         sfxPromise = audioSfx.play().catch(e => console.warn("Animal SFX failed:", e));

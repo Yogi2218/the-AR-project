@@ -687,7 +687,12 @@ export function getCharacters(): Character[] {
       }
     }
   }
-  return [...CHARACTERS, ...customs];
+  const all = [...CHARACTERS, ...customs];
+  if (typeof window !== 'undefined') {
+    const deletedList = JSON.parse(localStorage.getItem('deleted_characters') || '[]');
+    return all.filter((c) => !deletedList.includes(c.id));
+  }
+  return all;
 }
 
 export function getCharacterById(id: string): Character | undefined {
@@ -705,11 +710,21 @@ export function saveCustomCharacter(char: Character): void {
   }
 }
 
-/** Delete a custom character from localStorage */
-export function deleteCustomCharacter(id: string): void {
+/** Delete a character globally (hiding from all menus) */
+export function deleteCharacter(id: string): void {
   if (typeof window !== 'undefined') {
+    const deletedList = JSON.parse(localStorage.getItem('deleted_characters') || '[]');
+    if (!deletedList.includes(id)) {
+      deletedList.push(id);
+      localStorage.setItem('deleted_characters', JSON.stringify(deletedList));
+    }
     localStorage.removeItem(`custom_char_${id}`);
   }
+}
+
+/** Delete a custom character from localStorage */
+export function deleteCustomCharacter(id: string): void {
+  deleteCharacter(id);
 }
 
 /** Match a student's spoken/typed input to the best script line */
