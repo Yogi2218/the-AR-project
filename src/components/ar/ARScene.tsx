@@ -357,7 +357,9 @@ export default function ARScene({ onCanvasReady }: ARSceneProps) {
     THREE.Cache.enabled = true;
 
     const baseModelPath = char.modelFile || `/models/${char.id}.glb`;
-    const modelPath = `${baseModelPath}?t=${Date.now()}`;
+    const modelPath = baseModelPath.startsWith('http')
+      ? `/api/model-proxy?url=${encodeURIComponent(baseModelPath)}`
+      : `${baseModelPath}?t=${Date.now()}`;
     let gltfLoaded = false;
 
     try {
