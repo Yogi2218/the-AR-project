@@ -60,6 +60,8 @@ export default function ScriptPlayer() {
       speechEngine.speak({
         text,
         voiceProfile: character.voiceProfile,
+        preRecordedAudio: (currentScriptLine as any).audio,
+        preRecordedAlignment: (currentScriptLine as any).alignment,
         onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
         onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
         onWord:  (word) => {

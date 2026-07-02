@@ -30,6 +30,7 @@ export default function TemplatesPage() {
   const [title, setTitle] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [qas, setQas] = useState<{ q: string; a: string }[]>([{ q: '', a: '' }]);
+  const [editCount, setEditCount] = useState(0);
 
   async function loadTemplates() {
     setLoading(true);
@@ -55,6 +56,7 @@ export default function TemplatesPage() {
     setTitle('');
     setSystemPrompt('');
     setQas([{ q: '', a: '' }]);
+    setEditCount(0);
     setIsEditorOpen(true);
   }
 
@@ -64,6 +66,7 @@ export default function TemplatesPage() {
     setTitle(tpl.title);
     setSystemPrompt(tpl.script?.systemPrompt || '');
     setQas(tpl.script?.questions || [{ q: '', a: '' }]);
+    setEditCount(tpl.script?.editCount || 0);
     setIsEditorOpen(true);
   }
 
@@ -85,6 +88,11 @@ export default function TemplatesPage() {
   async function handleSaveTemplate(e: React.FormEvent) {
     e.preventDefault();
     if (!title || !systemPrompt) return;
+
+    if (templateId && editCount >= 2) {
+      const ok = confirm("Warning: This is your 3rd save. Saving this script will require administrator approval before it can be used. Do you want to proceed?");
+      if (!ok) return;
+    }
 
     // Filter out blank QAs
     const cleanQas = qas.filter((qa) => qa.q.trim() && qa.a.trim());
@@ -176,15 +184,26 @@ export default function TemplatesPage() {
               const qCount = tpl.script?.questions?.length || 0;
 
               return (
-                <div key={tpl.id} className="glass-card p-6 flex flex-col justify-between hover:scale-[1.02] transition-all duration-300">
+                <div key={tpl.id} className={`glass-card p-6 flex flex-col justify-between hover:scale-[1.02] transition-all duration-300 ${tpl.script?.status === 'pending_approval' ? 'border-amber-500/25 bg-amber-500/[0.01]' : ''}`}>
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
                         {charName}
                       </span>
-                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                        {qCount} custom Q&As
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {tpl.script?.status === 'pending_approval' ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                            Pending Approval
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                            Approved
+                          </span>
+                        )}
+                        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          {qCount} custom Q&As
+                        </span>
+                      </div>
                     </div>
 
                     <h3 className="font-bold text-white text-lg mb-2">{tpl.title}</h3>
@@ -244,6 +263,22 @@ export default function TemplatesPage() {
                     <p className="text-xs mb-6" style={{ color: 'var(--text-secondary)' }}>
                       Set the character's scenario topic and pre-program answers to expected questions.
                     </p>
+
+                    {templateId && (
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 mb-5 flex items-center justify-between">
+                        <div className="text-[11px] text-amber-300 font-medium">
+                          ✍️ Save Count: <span className="font-bold text-white">{editCount}</span> of 2 edits used.
+                          <div className="text-[9px] text-slate-400 font-normal mt-0.5">
+                            Saving a 3rd time will require admin approval.
+                          </div>
+                        </div>
+                        {editCount >= 2 && (
+                          <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-red-500/20 text-red-300">
+                            Approval Needed Next
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     <div className="space-y-4">
                       {/* Title */}

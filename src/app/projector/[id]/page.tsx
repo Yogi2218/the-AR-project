@@ -83,6 +83,8 @@ export default function ProjectorPage() {
             text: line.answer,
             voiceProfile: activeChar.voiceProfile,
             characterId: activeChar.id,
+            preRecordedAudio: line.audio,
+            preRecordedAlignment: line.alignment,
             onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
             onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
             onWord:  (word) => {

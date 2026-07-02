@@ -23,6 +23,10 @@ export default function AdminPage() {
   const [editingUser, setEditingUser] = useState<any | null>(null);
   const [updating, setUpdating] = useState(false);
 
+  const [activeTab, setActiveTab] = useState<'users' | 'scripts'>('users');
+  const [pendingScripts, setPendingScripts] = useState<any[]>([]);
+  const [loadingScripts, setLoadingScripts] = useState(false);
+
   async function fetchUsers() {
     setLoading(true);
     try {
@@ -40,8 +44,44 @@ export default function AdminPage() {
     }
   }
 
+  async function fetchPendingScripts() {
+    setLoadingScripts(true);
+    try {
+      const res = await fetch('/api/admin/templates');
+      if (res.ok) {
+        const data = await res.json();
+        setPendingScripts(data.templates || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingScripts(false);
+    }
+  }
+
+  async function handleApproveScript(id: string) {
+    if (!confirm('Are you sure you want to approve this script template?')) return;
+    try {
+      const res = await fetch('/api/admin/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        alert('Script template approved successfully!');
+        setPendingScripts(prev => prev.filter(s => s.id !== id));
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to approve script');
+      }
+    } catch (e) {
+      alert('An error occurred during approval');
+    }
+  }
+
   useEffect(() => {
     fetchUsers();
+    fetchPendingScripts();
   }, []);
 
   async function handleUpdateUser(payload: {
@@ -104,129 +144,213 @@ export default function AdminPage() {
             </p>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: 'var(--text-secondary)' }} />
-            <input
-              type="text"
-              placeholder="Search teachers, emails..."
-              className="input-field w-full pl-10 py-2.5"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
         </div>
 
-        {/* Loading / Error States */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 size={32} className="animate-spin text-indigo-400" />
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading user registry…</p>
-          </div>
-        ) : error ? (
-          <div className="glass-card p-6 text-center text-red-300 max-w-md mx-auto">
-            <ShieldAlert size={32} className="mx-auto mb-3 text-red-400" />
-            <h3 className="font-bold mb-1">Access Denied</h3>
-            <p className="text-sm mb-4">{error}</p>
-            <button onClick={fetchUsers} className="btn-primary py-2 px-4 text-xs mx-auto">Retry</button>
-          </div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="glass-card p-12 text-center" style={{ color: 'var(--text-secondary)' }}>
-            <Users size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">No teachers found matching your search.</p>
-          </div>
-        ) : (
-          /* Users Table */
-          <div className="glass-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    <th className="p-4 text-xs font-semibold text-white">Teacher</th>
-                    <th className="p-4 text-xs font-semibold text-white">School</th>
-                    <th className="p-4 text-xs font-semibold text-white">Role</th>
-                    <th className="p-4 text-xs font-semibold text-white">Status</th>
-                    <th className="p-4 text-xs font-semibold text-white">Visible Characters</th>
-                    <th className="p-4 text-xs font-semibold text-white text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredUsers.map((user) => {
-                    const initials = user.full_name
-                      ? user.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
-                      : 'T';
+        {/* Tab Selection */}
+        <div className="flex gap-2 mb-6 border-b border-white/5 pb-4">
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
+              activeTab === 'users' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Teacher Access Control ({users.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('scripts')}
+            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
+              activeTab === 'scripts' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Script Approvals ({pendingScripts.length})
+          </button>
+        </div>
 
-                    return (
-                      <tr key={user.id} className="hover:bg-white/[0.01] transition-colors">
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            {user.avatar_url ? (
-                              <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                                   style={{ background: 'linear-gradient(135deg,#6278f8,#4a57ed)' }}>
-                                {initials}
-                              </div>
-                            )}
-                            <div>
-                              <div className="text-sm font-medium text-white">{user.full_name || 'Pending Onboarding'}</div>
-                              <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{user.email}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="text-sm text-white">{user.school_name || '—'}</div>
-                          <div className="text-xs flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
-                            <GraduationCap size={12} /> {user.class_level || '—'}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <span className="text-xs px-2.5 py-1 rounded-full font-medium"
-                                style={{
-                                  background: user.role === 'super_admin' ? 'rgba(98,120,248,0.15)' : 'rgba(255,255,255,0.05)',
-                                  color: user.role === 'super_admin' ? '#8199fb' : '#9196b8',
-                                  border: user.role === 'super_admin' ? '1px solid rgba(98,120,248,0.25)' : '1px solid rgba(255,255,255,0.06)'
-                                }}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <span className="text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 w-fit"
-                                style={{
-                                  background: user.status === 'approved' ? 'rgba(34,197,94,0.1)' : user.status === 'pending' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)',
-                                  color: user.status === 'approved' ? '#4ade80' : user.status === 'pending' ? '#facc15' : '#f87171',
-                                }}>
-                            {user.status === 'approved' ? <CheckCircle2 size={12} /> : user.status === 'pending' ? <Eye size={12} /> : <XCircle size={12} />}
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex flex-wrap gap-1.5 max-w-xs">
-                            {user.visible_characters && user.visible_characters.length > 0 ? (
-                              user.visible_characters.map((c: string) => (
-                                <span key={c} className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-white font-medium capitalize">
-                                  {c}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-xs italic" style={{ color: 'var(--text-secondary)' }}>None (dashboard blank)</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-4 text-right">
-                          <button
-                            onClick={() => setEditingUser(user)}
-                            className="btn-secondary py-1.5 px-3.5 text-xs flex items-center gap-1.5 ml-auto"
-                          >
-                            <Edit2 size={12} /> Edit Profile
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        {/* Search Bar - only visible for users tab */}
+        {activeTab === 'users' && (
+          <div className="flex justify-end mb-6">
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: 'var(--text-secondary)' }} />
+              <input
+                type="text"
+                placeholder="Search teachers, emails..."
+                className="input-field w-full pl-10 py-2.5"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
+          </div>
+        )}
+
+        {/* Loading / Error States for Users Tab */}
+        {activeTab === 'users' && (
+          loading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <Loader2 size={32} className="animate-spin text-indigo-400" />
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Loading user registry…</p>
+            </div>
+          ) : error ? (
+            <div className="glass-card p-6 text-center text-red-300 max-w-md mx-auto">
+              <ShieldAlert size={32} className="mx-auto mb-3 text-red-400" />
+              <h3 className="font-bold mb-1">Access Denied</h3>
+              <p className="text-sm mb-4">{error}</p>
+              <button onClick={fetchUsers} className="btn-primary py-2 px-4 text-xs mx-auto">Retry</button>
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="glass-card p-12 text-center" style={{ color: 'var(--text-secondary)' }}>
+              <Users size={40} className="mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No teachers found matching your search.</p>
+            </div>
+          ) : (
+            /* Users Table */
+            <div className="glass-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <th className="p-4 text-xs font-semibold text-white">Teacher</th>
+                      <th className="p-4 text-xs font-semibold text-white">School</th>
+                      <th className="p-4 text-xs font-semibold text-white">Role</th>
+                      <th className="p-4 text-xs font-semibold text-white">Status</th>
+                      <th className="p-4 text-xs font-semibold text-white">Visible Characters</th>
+                      <th className="p-4 text-xs font-semibold text-white text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredUsers.map((user) => {
+                      const initials = user.full_name
+                        ? user.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+                        : 'T';
+
+                      return (
+                        <tr key={user.id} className="hover:bg-white/[0.01] transition-colors">
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              {user.avatar_url ? (
+                                <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                                     style={{ background: 'linear-gradient(135deg,#6278f8,#4a57ed)' }}>
+                                  {initials}
+                                </div>
+                              )}
+                              <div>
+                                <div className="text-sm font-medium text-white">{user.full_name || 'Pending Onboarding'}</div>
+                                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{user.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-sm text-white">{user.school_name || '—'}</div>
+                            <div className="text-xs flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                              <GraduationCap size={12} /> {user.class_level || '—'}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-xs px-2.5 py-1 rounded-full font-medium"
+                                  style={{
+                                    background: user.role === 'super_admin' ? 'rgba(98,120,248,0.15)' : 'rgba(255,255,255,0.05)',
+                                    color: user.role === 'super_admin' ? '#8199fb' : '#9196b8',
+                                    border: user.role === 'super_admin' ? '1px solid rgba(98,120,248,0.25)' : '1px solid rgba(255,255,255,0.06)'
+                                  }}>
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 w-fit"
+                                  style={{
+                                    background: user.status === 'approved' ? 'rgba(34,197,94,0.1)' : user.status === 'pending' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)',
+                                    color: user.status === 'approved' ? '#4ade80' : user.status === 'pending' ? '#facc15' : '#f87171',
+                                  }}>
+                              {user.status === 'approved' ? <CheckCircle2 size={12} /> : user.status === 'pending' ? <Eye size={12} /> : <XCircle size={12} />}
+                              {user.status}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex flex-wrap gap-1.5 max-w-xs">
+                              {user.visible_characters && user.visible_characters.length > 0 ? (
+                                user.visible_characters.map((c: string) => (
+                                  <span key={c} className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-white font-medium capitalize">
+                                    {c}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-xs italic" style={{ color: 'var(--text-secondary)' }}>None (dashboard blank)</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4 text-right">
+                            <button
+                              onClick={() => setEditingUser(user)}
+                              className="btn-secondary py-1.5 px-3.5 text-xs flex items-center gap-1.5 ml-auto"
+                            >
+                              <Edit2 size={12} /> Edit Profile
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* ── Tab Content: Script Approvals ───────────── */}
+        {activeTab === 'scripts' && (
+          <div className="space-y-6">
+            {loadingScripts ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <Loader2 size={32} className="animate-spin text-indigo-400" />
+                <p className="text-sm text-slate-400">Loading pending scripts…</p>
+              </div>
+            ) : pendingScripts.length === 0 ? (
+              <div className="glass-card p-12 text-center text-slate-400">
+                <BookOpen size={40} className="mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No script templates currently pending approval.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {pendingScripts.map((tpl) => {
+                  const charName = ALL_CHARACTERS.find(c => c.id === tpl.character_id)?.name || tpl.character_id;
+                  const questions = tpl.script?.questions || [];
+
+                  return (
+                    <div key={tpl.id} className="glass-card p-6 flex flex-col justify-between hover:scale-[1.01] transition-all">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/25 uppercase font-semibold">
+                            Pending Save Limit Approval
+                          </span>
+                          <span className="text-xs text-indigo-400 font-semibold">{charName}</span>
+                        </div>
+                        <h3 className="font-bold text-white text-lg mb-1">{tpl.title}</h3>
+                        <p className="text-[11px] text-slate-400 mb-4 font-mono">System: {tpl.script?.systemPrompt}</p>
+
+                        <div className="space-y-2.5 max-h-60 overflow-y-auto mb-6 p-2 bg-black/20 rounded-xl border border-white/5">
+                          {questions.map((qa: any, idx: number) => (
+                            <div key={idx} className="p-2.5 rounded-lg bg-white/[0.01] border border-white/5 space-y-1">
+                              <div className="text-[10px] font-bold text-slate-400">Q: {qa.q}</div>
+                              <div className="text-[10px] text-slate-300">A: {qa.a}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="border-t border-white/5 pt-4 flex gap-3">
+                        <button
+                          onClick={() => handleApproveScript(tpl.id)}
+                          className="btn-primary py-2 text-xs flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-1.5"
+                        >
+                          <CheckCircle2 size={12} /> Approve Script
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

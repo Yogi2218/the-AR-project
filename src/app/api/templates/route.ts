@@ -47,6 +47,74 @@ export async function POST(request: Request) {
 
     const supabase = await getSupabaseClient();
 
+    // Fetch existing template if editing
+    let existingTemplate: any = null;
+    if (id) {
+      const { data } = await supabase
+        .from('teacher_templates')
+        .select('*')
+        .eq('id', id)
+        .single();
+      existingTemplate = data;
+    }
+
+    let editCount = existingTemplate?.script?.editCount || 0;
+    if (id) {
+      editCount += 1;
+    }
+
+    let status = 'approved';
+    if (editCount >= 2) {
+      status = 'pending_approval';
+    }
+
+    const cleanQuestions = [];
+    const questions = script?.questions || [];
+
+    for (let i = 0; i < questions.length; i++) {
+      const qa = questions[i];
+      const oldQa = existingTemplate?.script?.questions?.find((q: any) => q.q === qa.q);
+
+      // If answer is unchanged and has audio, reuse it
+      if (oldQa && oldQa.a === qa.a && oldQa.audio) {
+        cleanQuestions.push(oldQa);
+      } else {
+        // Answer changed or new - pre-record TTS audio
+        try {
+          const ttsUrl = new URL('/api/tts', request.url);
+          const ttsRes = await fetch(ttsUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: qa.a,
+              characterId: character_id,
+            })
+          });
+          if (ttsRes.ok) {
+            const ttsData = await ttsRes.json();
+            cleanQuestions.push({
+              q: qa.q,
+              a: qa.a,
+              audio: ttsData.audio,
+              alignment: ttsData.alignment
+            });
+          } else {
+            cleanQuestions.push({ q: qa.q, a: qa.a });
+          }
+        } catch (e) {
+          console.error('Failed to pre-generate audio for QA:', e);
+          cleanQuestions.push({ q: qa.q, a: qa.a });
+        }
+      }
+    }
+
+    const finalScript = {
+      systemPrompt: script.systemPrompt || 'You are an educational AI character.',
+      questions: cleanQuestions,
+      editCount,
+      status
+    };
+
     if (id) {
       // Update existing template
       const { error } = await supabase
@@ -54,7 +122,7 @@ export async function POST(request: Request) {
         .update({
           character_id,
           title,
-          script,
+          script: finalScript,
           is_shared: !!is_shared,
           updated_at: new Date().toISOString(),
         })
@@ -70,7 +138,7 @@ export async function POST(request: Request) {
           user_id: user.id,
           character_id,
           title,
-          script,
+          script: finalScript,
           is_shared: !!is_shared,
         });
 

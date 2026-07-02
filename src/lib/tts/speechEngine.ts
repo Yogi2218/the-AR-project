@@ -9,6 +9,8 @@ export interface SpeechOptions {
   text: string;
   voiceProfile: VoiceProfile;
   characterId?: string; // Optional but helps map the specific character
+  preRecordedAudio?: string;
+  preRecordedAlignment?: AlignmentData;
   onStart?: () => void;
   onEnd?: () => void;
   onWord?: (word: string, charIndex: number) => void;
@@ -252,6 +254,19 @@ class SpeechEngine {
           if (onEnd) onEnd();
         }, 2500);
       });
+      return;
+    }
+
+    // Play pre-recorded/cached TTS if available
+    if (options.preRecordedAudio && options.preRecordedAlignment) {
+      this.playServerAudio(
+        options.preRecordedAudio,
+        options.preRecordedAlignment,
+        cleanedText,
+        onStart,
+        onEnd,
+        onWord
+      );
       return;
     }
 

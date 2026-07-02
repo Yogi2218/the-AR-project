@@ -152,6 +152,10 @@ export default function SetupPage() {
   const stepIndex = STEPS.findIndex(s => s.id === activeStep);
 
   const goNext = () => {
+    if (activeStep === 'script' && selectedTemplate?.script?.status === 'pending_approval') {
+      alert("You cannot proceed. This script is pending administrator approval because the edit limit was exceeded.");
+      return;
+    }
     const next = STEPS[stepIndex + 1];
     if (next) setActiveStep(next.id);
   };
@@ -190,6 +194,10 @@ export default function SetupPage() {
   };
 
   const handleLaunch = () => {
+    if (selectedTemplate?.script?.status === 'pending_approval') {
+      alert("You cannot launch. This script is pending administrator approval because the edit limit was exceeded.");
+      return;
+    }
     if (character) {
       saveStageProfile(character.id);
     }
@@ -539,21 +547,34 @@ export default function SetupPage() {
                     </div>
 
                     {!showScriptCreator ? (
-                      <select
-                        className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50"
-                        value={selectedTemplate?.id || ''}
-                        onChange={(e) => {
-                          const tpl = templates.find(t => t.id === e.target.value);
-                          setSelectedTemplate(tpl || null);
-                        }}
-                      >
-                        <option value="">No Template (Default Mode)</option>
-                        {templates.filter(t => t.character_id === character.id).map(tpl => (
-                          <option key={tpl.id} value={tpl.id}>
-                            {tpl.title}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="space-y-3">
+                        <select
+                          className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50"
+                          value={selectedTemplate?.id || ''}
+                          onChange={(e) => {
+                            const tpl = templates.find(t => t.id === e.target.value);
+                            setSelectedTemplate(tpl || null);
+                          }}
+                        >
+                          <option value="">No Template (Default Mode)</option>
+                          {templates.filter(t => t.character_id === character.id).map(tpl => (
+                            <option key={tpl.id} value={tpl.id} className="bg-slate-900 text-white">
+                              {tpl.title} {tpl.script?.status === 'pending_approval' ? ' (⏳ Pending Approval)' : ''}
+                            </option>
+                          ))}
+                        </select>
+
+                        {selectedTemplate?.script?.status === 'pending_approval' && (
+                          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex flex-col gap-1">
+                            <div className="text-[11px] text-red-400 font-bold flex items-center gap-1.5">
+                              ⏳ Locked: Pending Approval
+                            </div>
+                            <div className="text-[9px] text-slate-400 leading-normal">
+                              This script has exceeded the 2 edits limit and must be approved by the administrator before you can launch the session.
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <div className="bg-white/[0.03] border border-emerald-500/30 rounded-xl p-3 space-y-3 max-h-[350px] overflow-y-auto">
                         <div className="space-y-1">
