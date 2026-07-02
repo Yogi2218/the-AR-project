@@ -356,7 +356,8 @@ export default function ARScene({ onCanvasReady }: ARSceneProps) {
     // 1. Setup Three.js Caching
     THREE.Cache.enabled = true;
 
-    const modelPath = char.modelFile || `/models/${char.id}.glb`;
+    const baseModelPath = char.modelFile || `/models/${char.id}.glb`;
+    const modelPath = `${baseModelPath}?t=${Date.now()}`;
     let gltfLoaded = false;
 
     try {

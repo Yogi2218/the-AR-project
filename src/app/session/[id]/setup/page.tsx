@@ -40,6 +40,11 @@ export default function SetupPage() {
   const [profileSaved, setProfileSaved] = useState(false);
   const [testSpeaking, setTestSpeaking] = useState(false);
 
+  const [showScriptCreator, setShowScriptCreator] = useState(false);
+  const [newScriptTitle, setNewScriptTitle] = useState('');
+  const [newScriptSystemPrompt, setNewScriptSystemPrompt] = useState('');
+  const [isSavingScript, setIsSavingScript] = useState(false);
+
   const {
     character, startSession, endSession,
     characterPosition, characterRotation, characterScale,
@@ -71,6 +76,36 @@ export default function SetupPage() {
       })
       .catch(console.error);
   }, []);
+
+  async function handleCreateScript() {
+    if (!newScriptTitle.trim()) return;
+    setIsSavingScript(true);
+    try {
+      const res = await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newScriptTitle,
+          description: 'Created during session setup',
+          character_id: character?.id,
+          system_prompt: newScriptSystemPrompt || 'You are an educational AI character.',
+          questions: []
+        }),
+      });
+      const data = await res.json();
+      if (data.template) {
+        setTemplates([...templates, data.template]);
+        setSelectedTemplate(data.template);
+        setShowScriptCreator(false);
+        setNewScriptTitle('');
+        setNewScriptSystemPrompt('');
+      }
+    } catch (e) {
+      console.error('Error saving script:', e);
+    } finally {
+      setIsSavingScript(false);
+    }
+  }
 
   // Load character & start session in edit mode
   useEffect(() => {
@@ -457,22 +492,55 @@ export default function SetupPage() {
 
                   {/* Template Selection */}
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">Classroom Script Template</label>
-                    <select
-                      className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50"
-                      value={selectedTemplate?.id || ''}
-                      onChange={(e) => {
-                        const tpl = templates.find(t => t.id === e.target.value);
-                        setSelectedTemplate(tpl || null);
-                      }}
-                    >
-                      <option value="">No Template (Default Mode)</option>
-                      {templates.filter(t => t.character_id === character.id).map(tpl => (
-                        <option key={tpl.id} value={tpl.id}>
-                          {tpl.title}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">Classroom Script Template</label>
+                      <button type="button" onClick={() => setShowScriptCreator(!showScriptCreator)} className="text-[10px] text-emerald-400 hover:text-emerald-300">
+                        {showScriptCreator ? 'Cancel' : '+ Add Script'}
+                      </button>
+                    </div>
+
+                    {!showScriptCreator ? (
+                      <select
+                        className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/50"
+                        value={selectedTemplate?.id || ''}
+                        onChange={(e) => {
+                          const tpl = templates.find(t => t.id === e.target.value);
+                          setSelectedTemplate(tpl || null);
+                        }}
+                      >
+                        <option value="">No Template (Default Mode)</option>
+                        {templates.filter(t => t.character_id === character.id).map(tpl => (
+                          <option key={tpl.id} value={tpl.id}>
+                            {tpl.title}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="bg-white/[0.03] border border-emerald-500/30 rounded-xl p-3 space-y-3">
+                        <input
+                          type="text"
+                          placeholder="Topic / Lesson Name"
+                          value={newScriptTitle}
+                          onChange={(e) => setNewScriptTitle(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+                        />
+                        <textarea
+                          placeholder="Type the script or Q&A here... (e.g. 'You are teaching about gravity. Answer questions simply.')"
+                          value={newScriptSystemPrompt}
+                          onChange={(e) => setNewScriptSystemPrompt(e.target.value)}
+                          rows={3}
+                          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCreateScript}
+                          disabled={!newScriptTitle.trim() || isSavingScript}
+                          className="w-full bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 disabled:opacity-50 border border-emerald-500/50 rounded-lg py-2 text-xs font-semibold"
+                        >
+                          {isSavingScript ? 'Saving...' : 'Save & Select'}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Test actions */}

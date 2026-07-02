@@ -45,7 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   async function handleSignOut() {
     setSigningOut(true);
-    window.location.href = '/api/auth/logout';
+    window.location.href = '/auth/logout';
   }
 
   const initials = profile?.full_name

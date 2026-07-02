@@ -163,8 +163,8 @@ export async function POST(request: Request) {
     const enhancedTextEleven = enhanceTextNaturalness(trimmedText, 'elevenlabs');
     const enhancedTextGoogle = enhanceTextNaturalness(trimmedText, 'google');
 
-    // 1. Attempt ElevenLabs (English only — multilingual model supports all, but primary for English)
-    if (elevenLabsApiKey && language === 'english') {
+    // 1. Attempt ElevenLabs (multilingual model supports all)
+    if (elevenLabsApiKey) {
       try {
         console.log(`TTS API: Requesting ElevenLabs for voice ${voiceId} (isIndian: ${isIndian})...`);
         let response = await fetch(
