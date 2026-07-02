@@ -1,0 +1,233 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base Reset & Defaults ─────────────────────────────────── */
+:root {
+  --bg-primary: #0a0c1a;
+  --bg-secondary: #0f1127;
+  --bg-card: rgba(22, 25, 52, 0.8);
+  --brand: #6278f8;
+  --brand-light: #8199fb;
+  --accent: #f59e0b;
+  --text-primary: #e8eaf6;
+  --text-secondary: #9196b8;
+  --border: rgba(98, 120, 248, 0.2);
+  --glow: 0 0 20px rgba(98, 120, 248, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--brand); border-radius: 3px; }
+
+/* ─── Glass Components ──────────────────────────────────────── */
+@layer components {
+  .glass {
+    @apply backdrop-blur-md border border-white/10 bg-white/5;
+  }
+
+  .glass-dark {
+    background: rgba(10, 12, 26, 0.85);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(98, 120, 248, 0.15);
+  }
+
+  .glass-card {
+    background: rgba(22, 25, 52, 0.7);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(98, 120, 248, 0.2);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+  }
+
+  .glass-card:hover {
+    border-color: rgba(98, 120, 248, 0.5);
+    box-shadow: 0 0 30px rgba(98, 120, 248, 0.2);
+    transform: translateY(-2px);
+  }
+
+  /* ─── Buttons ─── */
+  .btn-primary {
+    @apply px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300;
+    background: linear-gradient(135deg, #6278f8, #4a57ed);
+    box-shadow: 0 4px 15px rgba(98, 120, 248, 0.4);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 6px 25px rgba(98, 120, 248, 0.6);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300;
+    background: rgba(98, 120, 248, 0.1);
+    border: 1px solid rgba(98, 120, 248, 0.3);
+    color: #8199fb;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(98, 120, 248, 0.2);
+    border-color: rgba(98, 120, 248, 0.6);
+  }
+
+  .btn-danger {
+    @apply px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+  }
+
+  /* ─── Badge ─── */
+  .badge {
+    @apply text-xs font-semibold px-2 py-1 rounded-full;
+  }
+
+  .badge-category {
+    background: rgba(98, 120, 248, 0.15);
+    color: #8199fb;
+    border: 1px solid rgba(98, 120, 248, 0.3);
+  }
+
+  /* ─── AR Scene ─── */
+  .ar-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+  }
+
+  .ar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .ar-controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    pointer-events: all;
+  }
+
+  /* ─── Recording Pulse ─── */
+  .recording-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: pulse-red 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-red {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+
+  /* ─── AR Scan Line ─── */
+  .scan-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #6278f8, transparent);
+    opacity: 0.7;
+    animation: scan 3s linear infinite;
+  }
+
+  /* ─── Neon text ─── */
+  .neon-text {
+    color: #8199fb;
+    text-shadow: 0 0 10px rgba(98, 120, 248, 0.8), 0 0 20px rgba(98, 120, 248, 0.4);
+  }
+
+  /* ─── Grid Background ─── */
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(98, 120, 248, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(98, 120, 248, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* ─── AR Corner Brackets ─── */
+  .ar-bracket {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: #6278f8;
+    border-style: solid;
+    opacity: 0.8;
+  }
+  .ar-bracket-tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
+  .ar-bracket-tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
+  .ar-bracket-bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
+  .ar-bracket-br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+
+  /* ─── Stats Card ─── */
+  .stat-card {
+    @apply glass-card p-4 text-center;
+  }
+
+  /* ─── Input Field ─── */
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl text-white outline-none transition-all duration-300;
+    background: rgba(10, 12, 26, 0.6);
+    border: 1px solid rgba(98, 120, 248, 0.2);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .input-field:focus {
+    border-color: rgba(98, 120, 248, 0.6);
+    box-shadow: 0 0 0 3px rgba(98, 120, 248, 0.1);
+  }
+
+  .input-field::placeholder {
+    color: rgba(145, 150, 184, 0.6);
+  }
+}
+
+/* ─── Gradient Utilities ────────────────────────────────────── */
+.gradient-brand {
+  background: linear-gradient(135deg, #6278f8 0%, #8199fb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-hero {
+  background: radial-gradient(ellipse at top, rgba(98, 120, 248, 0.15) 0%, transparent 60%),
+              radial-gradient(ellipse at bottom right, rgba(245, 158, 11, 0.08) 0%, transparent 50%);
+}
+
+/* ─── Character Category Colors ─────────────────────────────── */
+.cat-historical   { background: rgba(168, 85, 247, 0.15); color: #c084fc; border-color: rgba(168, 85, 247, 0.3); }
+.cat-scientist    { background: rgba(34, 211, 238, 0.15); color: #67e8f9; border-color: rgba(34, 211, 238, 0.3); }
+.cat-animal       { background: rgba(74, 222, 128, 0.15); color: #86efac; border-color: rgba(74, 222, 128, 0.3); }
+.cat-extinct      { background: rgba(251, 146, 60, 0.15); color: #fdba74; border-color: rgba(251, 146, 60, 0.3); }
+.cat-bird         { background: rgba(250, 204, 21, 0.15); color: #fde68a; border-color: rgba(250, 204, 21, 0.3); }
+.cat-fictional    { background: rgba(244, 63, 94, 0.15);  color: #fda4af; border-color: rgba(244, 63, 94, 0.3); }
+.cat-leader       { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border-color: rgba(59, 130, 246, 0.3); }

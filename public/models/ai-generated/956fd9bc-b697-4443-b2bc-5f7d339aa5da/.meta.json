@@ -1,0 +1,12 @@
+{
+  "source": "tripo",
+  "prompt": "Swami Vivekananda in traditional Indian saffron robes with turban, realistic face, standing pose",
+  "imageUploaded": false,
+  "generatedAt": "2026-06-19T09:08:40.486Z",
+  "animationPresets": [
+    "idle",
+    "walk",
+    "talk",
+    "gesture"
+  ]
+}

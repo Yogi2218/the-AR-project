@@ -1,0 +1,12 @@
+{
+  "source": "tripo",
+  "prompt": "Realistic Bengal tiger with orange and black stripes, full body, standing pose",
+  "imageUploaded": false,
+  "generatedAt": "2026-07-02T05:32:22.810Z",
+  "animationPresets": [
+    "idle",
+    "walk",
+    "talk",
+    "gesture"
+  ]
+}

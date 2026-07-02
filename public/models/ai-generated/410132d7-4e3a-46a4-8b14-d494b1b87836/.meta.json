@@ -1,0 +1,12 @@
+{
+  "source": "tripo",
+  "prompt": "Indian elephant with tusks, realistic grey skin, standing pose",
+  "imageUploaded": false,
+  "generatedAt": "2026-06-19T09:19:31.434Z",
+  "animationPresets": [
+    "idle",
+    "walk",
+    "talk",
+    "gesture"
+  ]
+}

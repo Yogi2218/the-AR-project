@@ -1,0 +1,12 @@
+{
+  "source": "tripo",
+  "prompt": "Indian peacock with fully spread colorful tail feathers, realistic bird",
+  "imageUploaded": false,
+  "generatedAt": "2026-06-19T11:55:37.647Z",
+  "animationPresets": [
+    "idle",
+    "walk",
+    "talk",
+    "gesture"
+  ]
+}

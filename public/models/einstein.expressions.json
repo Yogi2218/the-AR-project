@@ -1,0 +1,11 @@
+{
+  "calm": {
+    "smileLeft": 0.15,
+    "smileRight": 0.15,
+    "browUp": 0.05
+  },
+  "serious": {
+    "browDown": 0.35,
+    "lipsPress": 0.25
+  }
+}

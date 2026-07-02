@@ -1,0 +1,50 @@
+[
+  {
+    "topic": "Special Relativity",
+    "content": "In 1905, Einstein published his theory of special relativity. It states that the laws of physics are the same for all non-accelerating observers, and the speed of light in a vacuum is the same for all observers regardless of their motion. This led to the famous time dilation effect — moving clocks run slower. At 90% the speed of light, time slows to about 44% of normal."
+  },
+  {
+    "topic": "General Relativity",
+    "content": "Published in 1915, general relativity describes gravity not as a force, but as a curvature of spacetime caused by mass and energy. Massive objects like stars and planets bend the fabric of space around them. This bending is what we experience as gravity. The theory predicted gravitational waves, gravitational lensing, and the expansion of the universe."
+  },
+  {
+    "topic": "E=mc²",
+    "content": "The equation E=mc² means energy (E) equals mass (m) times the speed of light (c) squared. Since the speed of light is approximately 300,000,000 meters per second, even a tiny amount of mass contains enormous energy. One kilogram of matter, if fully converted, would release about 90 petajoules of energy — equivalent to 21 megatons of TNT."
+  },
+  {
+    "topic": "Photoelectric Effect",
+    "content": "Einstein's 1905 paper on the photoelectric effect showed that light consists of discrete packets of energy called photons. When photons strike a metal surface, they can knock electrons loose, but only if each photon carries enough energy. This work earned Einstein the 1921 Nobel Prize in Physics and was crucial to the development of quantum mechanics."
+  },
+  {
+    "topic": "Black Holes",
+    "content": "Einstein's general relativity equations predicted the existence of black holes — regions where spacetime is so curved that nothing, not even light, can escape. The boundary is called the event horizon. In 2019, the Event Horizon Telescope captured the first direct image of a black hole in galaxy M87, confirming Einstein's century-old predictions."
+  },
+  {
+    "topic": "Gravity and Spacetime",
+    "content": "Gravity is not a force pulling objects together — it is the result of curved spacetime. Imagine placing a heavy bowling ball on a stretched rubber sheet. The sheet curves, and nearby marbles roll toward the ball. Massive objects like the Sun curve spacetime, and planets follow these curves in their orbits."
+  },
+  {
+    "topic": "Early Life and Education",
+    "content": "Einstein was born in Ulm, Germany, on March 14, 1879. He showed early fascination with a compass his father gave him at age five. He attended the Swiss Federal Polytechnic in Zurich, where he initially struggled with the rigid academic system. After graduation, he worked as a patent clerk in Bern, during which time he published his revolutionary 1905 papers."
+  },
+  {
+    "topic": "Brownian Motion",
+    "content": "In 1905, Einstein explained Brownian motion — the random movement of tiny particles suspended in liquid. He showed this motion was caused by invisible molecules colliding with the particles, providing strong evidence for the existence of atoms at a time when many scientists still doubted their reality."
+  },
+  {
+    "topic": "Light and Photons",
+    "content": "Einstein showed that light has a dual nature — it behaves both as a wave and as particles called photons. Each photon carries a specific amount of energy determined by its frequency. This wave-particle duality became a cornerstone of quantum mechanics and changed our understanding of the nature of reality."
+  },
+  {
+    "topic": "Gravitational Waves",
+    "content": "Einstein predicted in 1916 that accelerating masses would create ripples in spacetime called gravitational waves. These waves travel at the speed of light. In 2015, the LIGO observatory detected gravitational waves for the first time, produced by two merging black holes 1.3 billion light-years away, confirming Einstein's prediction a century later."
+  },
+  {
+    "topic": "Philosophy of Science",
+    "content": "Einstein believed that imagination is more important than knowledge. He used thought experiments — imagining riding alongside a beam of light, or being in a falling elevator — to develop his theories. He advocated for curiosity-driven learning and said: 'The important thing is not to stop questioning. Curiosity has its own reason for existing.'"
+  },
+  {
+    "topic": "Nuclear Energy",
+    "content": "E=mc² showed that mass could be converted to energy. This principle underlies nuclear fission (splitting atoms) and nuclear fusion (combining atoms). Einstein wrote a letter to President Roosevelt in 1939 warning about the possibility of atomic weapons, which led to the Manhattan Project. He later deeply regretted this contribution to nuclear weapons development."
+  }
+]

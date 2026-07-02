@@ -1,0 +1,12 @@
+{
+  "source": "tripo",
+  "prompt": "Albert Einstein in brown tweed jacket with wild white hair and mustache, chalkboard behind",
+  "imageUploaded": false,
+  "generatedAt": "2026-06-20T18:07:46.987Z",
+  "animationPresets": [
+    "idle",
+    "walk",
+    "talk",
+    "gesture"
+  ]
+}
