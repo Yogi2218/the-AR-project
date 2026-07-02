@@ -16,7 +16,15 @@ const ARScene = dynamic(() => import('@/components/ar/ARScene'), { ssr: false })
 
 export default function ProjectorPage() {
   const params    = useParams<{ id: string }>();
-  const { character, startSession, currentSubtitle, isSpeaking, isRecording, loadRoomLayout } = useSessionStore();
+  const {
+    character, startSession, currentSubtitle, isSpeaking, isRecording, loadRoomLayout,
+    setCharacterPosition, setCharacterRotation, setCharacterScale,
+    setCameraOpacity, setCameraBlur, setCameraMirror,
+    setShowGrid, setShowCenteringGuide,
+    setBackgroundMode, setBackgroundImageUrl, setBackgroundVideoUrl,
+    setShowSelfieSegmentation, setActiveExpression,
+    setSubtitle, setIsSpeaking, setMouthOpen, setActiveScript
+  } = useSessionStore();
   const [showAR, setShowAR] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -46,14 +54,71 @@ export default function ProjectorPage() {
       }
     };
 
+    // Cross-window sync via BroadcastChannel
+    const channel = new BroadcastChannel('eduar-session');
+    channel.onmessage = (e) => {
+      const { type, layout, script, line } = e.data;
+      
+      if (type === 'UPDATE_LAYOUT' && layout) {
+        if (layout.characterPosition) setCharacterPosition(layout.characterPosition);
+        if (layout.characterRotation) setCharacterRotation(layout.characterRotation);
+        if (layout.characterScale !== undefined) setCharacterScale(layout.characterScale);
+        if (layout.cameraOpacity !== undefined) setCameraOpacity(layout.cameraOpacity);
+        if (layout.cameraBlur !== undefined) setCameraBlur(layout.cameraBlur);
+        if (layout.cameraMirror !== undefined) setCameraMirror(layout.cameraMirror);
+        if (layout.showGrid !== undefined) setShowGrid(layout.showGrid);
+        if (layout.showCenteringGuide !== undefined) setShowCenteringGuide(layout.showCenteringGuide);
+        if (layout.backgroundMode) setBackgroundMode(layout.backgroundMode);
+        if (layout.backgroundImageUrl !== undefined) setBackgroundImageUrl(layout.backgroundImageUrl);
+        if (layout.backgroundVideoUrl !== undefined) setBackgroundVideoUrl(layout.backgroundVideoUrl);
+        if (layout.showSelfieSegmentation !== undefined) setShowSelfieSegmentation(layout.showSelfieSegmentation);
+        if (layout.activeExpression) setActiveExpression(layout.activeExpression);
+      } else if (type === 'SET_ACTIVE_SCRIPT' && script) {
+        setActiveScript(script);
+      } else if (type === 'SPEAK_LINE' && line) {
+        const activeChar = char || character;
+        if (activeChar) {
+          setSubtitle(line.answer);
+          speechEngine?.speak({
+            text: line.answer,
+            voiceProfile: activeChar.voiceProfile,
+            characterId: activeChar.id,
+            onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
+            onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
+            onWord:  (word) => {
+              const v = word.match(/[aeiouáéíóú]/gi)?.length ?? 1;
+              setMouthOpen(Math.min(0.9, v * 0.3));
+            }
+          });
+        }
+      } else if (type === 'SPEAK_INTRO') {
+        const activeChar = char || character;
+        if (activeChar) {
+          setSubtitle(activeChar.introMonologue);
+          speechEngine?.speak({
+            text: activeChar.introMonologue,
+            voiceProfile: activeChar.voiceProfile,
+            characterId: activeChar.id,
+            onStart: () => { setIsSpeaking(true); setMouthOpen(0.6); },
+            onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
+          });
+        }
+      } else if (type === 'STOP_SPEAKING') {
+        speechEngine?.stop();
+        setIsSpeaking(false);
+        setMouthOpen(0);
+      }
+    };
+
     window.addEventListener('keydown', onKey);
     window.addEventListener('storage', onStorage);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('storage', onStorage);
+      channel.close();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [character]);
 
   const char = mounted ? (character ?? getCharacterById(params.id)) : undefined;
 

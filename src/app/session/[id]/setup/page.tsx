@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Play, Save, RotateCcw, Volume2,
   Move, RotateCw, Maximize, Image, Video, Camera, User,
-  Mic, Sparkles, CheckCircle, Settings2, ArrowRight
+  Mic, Sparkles, CheckCircle, Settings2, ArrowRight, Plus, Trash2
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { getCharacterById } from '@/lib/characters/characterData';
@@ -43,7 +43,17 @@ export default function SetupPage() {
   const [showScriptCreator, setShowScriptCreator] = useState(false);
   const [newScriptTitle, setNewScriptTitle] = useState('');
   const [newScriptSystemPrompt, setNewScriptSystemPrompt] = useState('');
+  const [newScriptQas, setNewScriptQas] = useState<{ q: string; a: string }[]>([{ q: '', a: '' }]);
   const [isSavingScript, setIsSavingScript] = useState(false);
+
+  const handleAddQA = () => setNewScriptQas([...newScriptQas, { q: '', a: '' }]);
+  const handleRemoveQA = (idx: number) => {
+    if (newScriptQas.length === 1) return;
+    setNewScriptQas(newScriptQas.filter((_, i) => i !== idx));
+  };
+  const handleQAChange = (idx: number, field: 'q' | 'a', value: string) => {
+    setNewScriptQas(newScriptQas.map((qa, i) => i === idx ? { ...qa, [field]: value } : qa));
+  };
 
   const {
     character, startSession, endSession,
@@ -81,27 +91,45 @@ export default function SetupPage() {
     if (!newScriptTitle.trim()) return;
     setIsSavingScript(true);
     try {
+      const cleanQas = newScriptQas
+        .filter(qa => qa.q.trim() && qa.a.trim())
+        .map(qa => ({
+          q: qa.q.trim(),
+          a: qa.a.trim()
+        }));
+
       const res = await fetch('/api/templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: newScriptTitle,
-          description: 'Created during session setup',
           character_id: character?.id,
-          system_prompt: newScriptSystemPrompt || 'You are an educational AI character.',
-          questions: []
+          title: newScriptTitle.trim(),
+          script: {
+            systemPrompt: newScriptSystemPrompt || 'You are an educational AI character.',
+            questions: cleanQas
+          }
         }),
       });
-      const data = await res.json();
-      if (data.template) {
-        setTemplates([...templates, data.template]);
-        setSelectedTemplate(data.template);
-        setShowScriptCreator(false);
-        setNewScriptTitle('');
-        setNewScriptSystemPrompt('');
+
+      if (!res.ok) throw new Error('Failed to save script template');
+      
+      // Reload templates list from database
+      const reloadRes = await fetch('/api/templates');
+      const reloadData = await reloadRes.json();
+      if (reloadData.templates) {
+        setTemplates(reloadData.templates);
+        // Automatically select the newly created template
+        const matched = reloadData.templates.find((t: any) => t.title === newScriptTitle.trim());
+        if (matched) setSelectedTemplate(matched);
       }
+
+      setShowScriptCreator(false);
+      setNewScriptTitle('');
+      setNewScriptSystemPrompt('');
+      setNewScriptQas([{ q: '', a: '' }]);
     } catch (e) {
       console.error('Error saving script:', e);
+      alert('Failed to save script template');
     } finally {
       setIsSavingScript(false);
     }
@@ -166,7 +194,14 @@ export default function SetupPage() {
     }
     speechEngine?.stop();
     endSession();
-    router.push(`/session/${params.id}`);
+    
+    // Open control presenter view in a new window/popup
+    const tplQuery = selectedTemplate ? `&template=${selectedTemplate.id}` : '';
+    const controlUrl = `/session/${params.id}?popup=true${tplQuery}`;
+    window.open(controlUrl, '_blank', 'width=1100,height=750,status=no,menubar=no,toolbar=no');
+    
+    // Redirect current tab to clean Projector Mode view
+    router.push(`/projector/${params.id}`);
   };
 
   if (!character) {
@@ -516,21 +551,75 @@ export default function SetupPage() {
                         ))}
                       </select>
                     ) : (
-                      <div className="bg-white/[0.03] border border-emerald-500/30 rounded-xl p-3 space-y-3">
-                        <input
-                          type="text"
-                          placeholder="Topic / Lesson Name"
-                          value={newScriptTitle}
-                          onChange={(e) => setNewScriptTitle(e.target.value)}
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
-                        />
-                        <textarea
-                          placeholder="Type the script or Q&A here... (e.g. 'You are teaching about gravity. Answer questions simply.')"
-                          value={newScriptSystemPrompt}
-                          onChange={(e) => setNewScriptSystemPrompt(e.target.value)}
-                          rows={3}
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
-                        />
+                      <div className="bg-white/[0.03] border border-emerald-500/30 rounded-xl p-3 space-y-3 max-h-[350px] overflow-y-auto">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Script Title</label>
+                          <input
+                            type="text"
+                            placeholder="Topic / Lesson Name"
+                            value={newScriptTitle}
+                            onChange={(e) => setNewScriptTitle(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">System Prompt (AI persona)</label>
+                          <textarea
+                            placeholder="e.g. 'You are teaching about gravity. Answer questions simply.'"
+                            value={newScriptSystemPrompt}
+                            onChange={(e) => setNewScriptSystemPrompt(e.target.value)}
+                            rows={2}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+                          />
+                        </div>
+                        
+                        {/* Dynamic Q&A list */}
+                        <div className="space-y-2 border-t border-white/10 pt-2">
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Questions & Answers</label>
+                            <button
+                              type="button"
+                              onClick={handleAddQA}
+                              className="text-[10px] flex items-center gap-0.5 text-emerald-400 hover:text-emerald-300 font-semibold"
+                            >
+                              <Plus size={10} /> Add Q&A
+                            </button>
+                          </div>
+
+                          <div className="space-y-3">
+                            {newScriptQas.map((qa, index) => (
+                              <div key={index} className="p-2 bg-black/20 rounded-lg border border-white/5 relative space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[10px] font-bold text-slate-400">Q{index + 1}</span>
+                                  {newScriptQas.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveQA(index)}
+                                      className="text-red-400 hover:text-red-300 transition-colors"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  )}
+                                </div>
+                                <input
+                                  type="text"
+                                  placeholder={`Question ${index + 1}`}
+                                  value={qa.q}
+                                  onChange={(e) => handleQAChange(index, 'q', e.target.value)}
+                                  className="w-full bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+                                />
+                                <textarea
+                                  placeholder={`Answer ${index + 1}`}
+                                  value={qa.a}
+                                  onChange={(e) => handleQAChange(index, 'a', e.target.value)}
+                                  rows={2}
+                                  className="w-full bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
                         <button
                           type="button"
                           onClick={handleCreateScript}

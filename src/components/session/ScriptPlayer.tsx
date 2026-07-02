@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Play, Square,
@@ -23,6 +23,19 @@ export default function ScriptPlayer() {
   } = useSessionStore();
 
   const [showAllScripts, setShowAllScripts] = useState(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+
+  // Read query parameters
+  const isPopup = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('popup') === 'true';
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      channelRef.current = new BroadcastChannel('eduar-session');
+    }
+    return () => {
+      channelRef.current?.close();
+    };
+  }, []);
 
   const speakCurrentLine = useCallback(() => {
     if (!currentScriptLine || !character) return;
@@ -31,29 +44,57 @@ export default function ScriptPlayer() {
     setSubtitle(text);
     addInteraction({ speaker: 'character', message: text, inputType: 'button' });
 
-    speechEngine.speak({
-      text,
-      voiceProfile: character.voiceProfile,
-      onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
-      onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
-      onWord:  (word) => {
-        const v = word.match(/[aeiouáéíóú]/gi)?.length ?? 1;
-        setMouthOpen(Math.min(0.9, v * 0.3));
-      },
-    });
-  }, [currentScriptLine, character, setSubtitle, addInteraction, setIsSpeaking, setMouthOpen]);
+    if (isPopup) {
+      // Broadcast to Projector instead of speaking locally
+      channelRef.current?.postMessage({ type: 'SPEAK_LINE', line: currentScriptLine });
+      setIsSpeaking(true);
+      setMouthOpen(0.5);
+      // Simulate mouth animation end locally
+      const duration = Math.min(8000, text.length * 70);
+      const timer = setTimeout(() => {
+        setIsSpeaking(false);
+        setMouthOpen(0);
+      }, duration);
+      return () => clearTimeout(timer);
+    } else {
+      speechEngine.speak({
+        text,
+        voiceProfile: character.voiceProfile,
+        onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
+        onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
+        onWord:  (word) => {
+          const v = word.match(/[aeiouáéíóú]/gi)?.length ?? 1;
+          setMouthOpen(Math.min(0.9, v * 0.3));
+        },
+      });
+    }
+  }, [currentScriptLine, character, setSubtitle, addInteraction, setIsSpeaking, setMouthOpen, isPopup]);
 
   const speakIntro = useCallback(() => {
     if (!character) return;
     const text = character.introMonologue;
     setSubtitle(text);
-    speechEngine.speak({
-      text,
-      voiceProfile: character.voiceProfile,
-      onStart: () => { setIsSpeaking(true); setMouthOpen(0.6); },
-      onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
-    });
-  }, [character, setSubtitle, setIsSpeaking, setMouthOpen]);
+
+    if (isPopup) {
+      // Broadcast intro to Projector
+      channelRef.current?.postMessage({ type: 'SPEAK_INTRO' });
+      setIsSpeaking(true);
+      setMouthOpen(0.6);
+      const duration = Math.min(8000, text.length * 70);
+      const timer = setTimeout(() => {
+        setIsSpeaking(false);
+        setMouthOpen(0);
+      }, duration);
+      return () => clearTimeout(timer);
+    } else {
+      speechEngine.speak({
+        text,
+        voiceProfile: character.voiceProfile,
+        onStart: () => { setIsSpeaking(true); setMouthOpen(0.6); },
+        onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
+      });
+    }
+  }, [character, setSubtitle, setIsSpeaking, setMouthOpen, isPopup]);
 
   if (!character) return null;
 

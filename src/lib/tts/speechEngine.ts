@@ -226,6 +226,35 @@ class SpeechEngine {
     this.stop();
     this.isSpeakingActive = true;
 
+    // SFX Playback for animals (Tiger / Lion)
+    let cleanedText = text;
+    let sfxPromise = Promise.resolve();
+    if (charId === 'tiger' || charId === 'lion') {
+      const lowerText = text.toLowerCase();
+      if (lowerText.includes('*low growl*') || lowerText.includes('*growl*') || lowerText.includes('*roar*')) {
+        const soundUrl = charId === 'lion'
+          ? 'https://www.soundjay.com/beast/sounds/lion-roar-01.mp3'
+          : 'https://www.soundjay.com/beast/sounds/tiger-growl-01.mp3';
+        const audioSfx = new Audio(soundUrl);
+        audioSfx.volume = 0.8;
+        sfxPromise = audioSfx.play().catch(e => console.warn("Animal SFX failed:", e));
+      }
+    }
+
+    // Strip actions like *low growl* or *growl*
+    cleanedText = text.replace(/\*[^*]+\*/g, '').trim();
+
+    // If no text remains (only actions), trigger start/end lifecycle manually
+    if (!cleanedText) {
+      if (onStart) onStart();
+      sfxPromise.then(() => {
+        setTimeout(() => {
+          if (onEnd) onEnd();
+        }, 2500);
+      });
+      return;
+    }
+
     const storeState = useSessionStore.getState();
     const lang = storeState.selectedLanguage;
     const voiceMood = storeState.mood;
@@ -236,7 +265,7 @@ class SpeechEngine {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        text, 
+        text: cleanedText, 
         characterId: charId, 
         language: lang, 
         mood: voiceMood,
@@ -248,16 +277,17 @@ class SpeechEngine {
         if (!this.isSpeakingActive) return; // Cancelled
 
         if (data.audio) {
-          this.playServerAudio(data.audio, data.alignment, text, onStart, onEnd, onWord);
+          this.playServerAudio(data.audio, data.alignment, cleanedText, onStart, onEnd, onWord);
         } else {
           console.warn('TTS: Server returned no audio stream. Falling back to browser SpeechSynthesis.');
-          this.playClientFallback(text, voiceProfile, data.alignment, onStart, onEnd, onWord, onError);
+          const alignment = this.estimateMockAlignment(cleanedText);
+          this.playClientFallback(cleanedText, voiceProfile, alignment, onStart, onEnd, onWord, onError);
         }
       })
       .catch((err) => {
         console.error('TTS: Server request error, playing offline fallback.', err);
-        const alignment = this.estimateMockAlignment(text);
-        this.playClientFallback(text, voiceProfile, alignment, onStart, onEnd, onWord, onError);
+        const alignment = this.estimateMockAlignment(cleanedText);
+        this.playClientFallback(cleanedText, voiceProfile, alignment, onStart, onEnd, onWord, onError);
       });
   }
 

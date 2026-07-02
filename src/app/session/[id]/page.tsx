@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Camera, CameraOff, Maximize2, Minimize2, Volume2, VolumeX,
@@ -19,6 +19,37 @@ import { useAIEngine } from '@/hooks/useAIEngine';
 
 // Dynamic import for AR scene (no SSR — needs window/WebGL)
 const ARScene = dynamic(() => import('@/components/ar/ARScene'), { ssr: false });
+
+function WebcamPreview() {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then((s) => {
+        stream = s;
+        if (videoRef.current) videoRef.current.srcObject = s;
+      })
+      .catch((err) => console.warn("Webcam preview access denied:", err));
+    return () => {
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+  return (
+    <div className="w-full h-full relative bg-slate-950 flex items-center justify-center overflow-hidden rounded-2xl border border-indigo-500/20">
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className="w-full h-full object-cover scale-x-[-1]"
+      />
+      <div className="absolute top-4 right-4 bg-indigo-600/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold text-white tracking-wider flex items-center gap-1.5 shadow-lg border border-indigo-400/30">
+        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+        PRESENTER FEED
+      </div>
+    </div>
+  );
+}
 
 type Panel = 'script' | 'voice' | 'record' | 'info' | 'ai' | null;
 
@@ -64,6 +95,10 @@ export default function SessionPage() {
     costUsage, canUseAI
   } = useSessionStore();
 
+  const searchParams = useSearchParams();
+  const isPopup = searchParams.get('popup') === 'true';
+  const templateIdParam = searchParams.get('template');
+
   const [activePanel, setActivePanel] = useState<Panel>('script');
   const [textInput,   setTextInput]   = useState('');
   const [muted,       setMuted]       = useState(false);
@@ -89,18 +124,138 @@ export default function SessionPage() {
     // Speak intro after short delay
     setTimeout(() => {
       setSubtitle(char.introMonologue);
-      speechEngine.speak({
-        text: char.introMonologue,
-        voiceProfile: char.voiceProfile,
-        onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
-        onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
-      });
+      if (isPopup) {
+        // Broadcast intro instead of speaking locally
+        const channel = new BroadcastChannel('eduar-session');
+        channel.postMessage({ type: 'SPEAK_INTRO' });
+        channel.close();
+        setIsSpeaking(true);
+        setMouthOpen(0.6);
+        setTimeout(() => {
+          setIsSpeaking(false);
+          setMouthOpen(0);
+        }, 6000);
+      } else {
+        speechEngine.speak({
+          text: char.introMonologue,
+          voiceProfile: char.voiceProfile,
+          onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
+          onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
+        });
+      }
     }, 1500);
 
     setShowAR(true);
     return () => { speechEngine.stop(); endSession(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
+  }, [params.id, isPopup]);
+
+  // Load custom script template from Supabase database if passed
+  const { activeScript } = useSessionStore();
+  useEffect(() => {
+    if (!character || !templateIdParam) return;
+    fetch('/api/templates')
+      .then(res => res.json())
+      .then(data => {
+        if (data.templates) {
+          const found = data.templates.find((t: any) => t.id === templateIdParam);
+          if (found && found.script?.questions) {
+            const mapped = found.script.questions.map((q: any, idx: number) => ({
+              id: `db_${idx}`,
+              question: q.q,
+              keywords: [],
+              answer: q.a,
+              followUp: ''
+            }));
+            setActiveScript(mapped);
+          }
+        }
+      })
+      .catch(console.error);
+  }, [character, templateIdParam, setActiveScript]);
+
+  // Broadcast layout & character placement updates in real time
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const channel = new BroadcastChannel('eduar-session');
+    channel.postMessage({
+      type: 'UPDATE_LAYOUT',
+      layout: {
+        characterPosition,
+        characterRotation,
+        characterScale,
+        cameraOpacity,
+        cameraBlur,
+        cameraMirror,
+        showGrid,
+        showCenteringGuide,
+        backgroundMode,
+        backgroundImageUrl,
+        backgroundVideoUrl,
+        showSelfieSegmentation,
+        activeExpression
+      }
+    });
+    return () => channel.close();
+  }, [
+    characterPosition, characterRotation, characterScale,
+    cameraOpacity, cameraBlur, cameraMirror, showGrid, showCenteringGuide,
+    backgroundMode, backgroundImageUrl, backgroundVideoUrl, showSelfieSegmentation,
+    activeExpression
+  ]);
+
+  // Sync activeScript to Projector page
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const channel = new BroadcastChannel('eduar-session');
+    if (activeScript.length > 0) {
+      channel.postMessage({ type: 'SET_ACTIVE_SCRIPT', script: activeScript });
+    }
+    return () => channel.close();
+  }, [activeScript]);
+
+  // Keyboard shortcut triggers (keys 1-9) for scripts
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA'
+      ) {
+        return;
+      }
+      
+      const num = parseInt(e.key, 10);
+      if (num >= 1 && num <= 9) {
+        const line = activeScript[num - 1];
+        if (line) {
+          const channel = new BroadcastChannel('eduar-session');
+          if (isPopup) {
+            channel.postMessage({ type: 'SPEAK_LINE', line });
+            setSubtitle(line.answer);
+            setIsSpeaking(true);
+            const duration = Math.min(8000, line.answer.length * 70);
+            setTimeout(() => {
+              setIsSpeaking(false);
+              setMouthOpen(0);
+            }, duration);
+          } else {
+            setSubtitle(line.answer);
+            speechEngine.speak({
+              text: line.answer,
+              voiceProfile: character?.voiceProfile || { pitch: 1, rate: 0.9, volume: 1.0, accent: 'en-IN' },
+              characterId: character?.id,
+              onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
+              onEnd: () => { setIsSpeaking(false); setMouthOpen(0); },
+            });
+          }
+          channel.close();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeScript, character, isPopup, setIsSpeaking, setMouthOpen, setSubtitle]);
 
   // Load custom scripts list
   useEffect(() => {
@@ -712,7 +867,7 @@ export default function SessionPage() {
         {/* AR Canvas — takes full area */}
         <div className="flex-1 relative">
           {showAR && (
-            <ARScene onCanvasReady={(c) => { canvasRef.current = c; }} />
+            isPopup ? <WebcamPreview /> : <ARScene onCanvasReady={(c) => { canvasRef.current = c; }} />
           )}
 
           {/* Centering crosshair overlay */}
