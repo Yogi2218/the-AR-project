@@ -202,18 +202,6 @@ export default function CreateAICharacterPage() {
     setIsSaving(true);
 
     try {
-      const res = await fetch('/api/character-save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ uuid: resultData.uuid }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to notify server about save');
-      }
-
       let scripts: any[] = [];
       let builtInMatch = null;
       if (activeTab === 'preset' && selectedPreset) {
