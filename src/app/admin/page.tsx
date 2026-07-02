@@ -8,14 +8,12 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
-const ALL_CHARACTERS = [
-  { id: 'einstein',  name: 'Albert Einstein' },
-  { id: 'gandhi',    name: 'Mahatma Gandhi'  },
-  { id: 'curie',     name: 'Marie Curie'     },
-  { id: 'kalam',     name: 'APJ Abdul Kalam' },
-  { id: 'cleopatra', name: 'Cleopatra'       },
-  { id: 'davinci',   name: 'Leonardo da Vinci' }
-];
+import { CHARACTERS } from '@/lib/characters/characterData';
+
+const ALL_CHARACTERS = CHARACTERS.map(c => ({
+  id: c.id,
+  name: c.name
+}));
 
 export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([]);
