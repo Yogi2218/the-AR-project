@@ -1210,6 +1210,9 @@ export default function ARScene({ onCanvasReady }: ARSceneProps) {
           if (leftShoulder.userData.baseY === undefined) leftShoulder.userData.baseY = leftShoulder.position.y;
           if (rightShoulder.userData.baseY === undefined) rightShoulder.userData.baseY = rightShoulder.position.y;
           leftShoulder.position.y = THREE.MathUtils.lerp(leftShoulder.position.y, leftShoulder.userData.baseY + shoulderRise, delta * 4);
+          rightShoulder.position.y = THREE.MathUtils.lerp(rightShoulder.position.y, rightShoulder.userData.baseY + shoulderRise, delta * 4);
+        }
+
         // --- 6. Fallback mesh sync & Morph Target Apply ---
         const leftEyelid = charGroupRef.current.getObjectByName('leftEyelid');
         const rightEyelid = charGroupRef.current.getObjectByName('rightEyelid');
