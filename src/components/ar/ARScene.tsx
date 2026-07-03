@@ -439,7 +439,8 @@ export default function ARScene({ onCanvasReady }: ARSceneProps) {
       });
 
       model.userData.isStaticModel = (boneCount === 0);
-      console.log(`GLTFLoader: Rig Health - Bone count = ${boneCount}, isStaticModel = ${model.userData.isStaticModel}`);
+      model.userData.hasJaw = hasJaw;
+      console.log(`GLTFLoader: Rig Health - Bone count = ${boneCount}, isStaticModel = ${model.userData.isStaticModel}, hasJaw = ${hasJaw}`);
 
       if (!hasJaw && boneCount > 0) console.warn(`Rig Health: Missing jaw bone or morphs in ${modelPath}`);
       if (!hasEyes && boneCount > 0) console.warn(`Rig Health: Missing eye bones or blink morphs in ${modelPath}`);
@@ -615,8 +616,8 @@ export default function ARScene({ onCanvasReady }: ARSceneProps) {
 
     // 6. Recovery Layer (Procedural Fallback)
     if (!gltfLoaded) {
-      console.log(`ARScene: Rendering procedural 3D model fallback for ${char.name}`);
-      const group = buildCharacterMesh(char);
+      console.warn(`ARScene: No valid GLB found and procedural fallback is disabled. Character ${char.name} will not be rendered.`);
+      const group = new THREE.Group();
       group.position.set(currentPos.x, currentPos.y, currentPos.z);
       group.rotation.set(currentRot.x, currentRot.y, currentRot.z);
       targetScene.add(group);
@@ -1101,14 +1102,18 @@ export default function ARScene({ onCanvasReady }: ARSceneProps) {
         const swayAmtX = mood === 'energetic' ? 0.03 : mood === 'serious' ? 0.008 : 0.015;
         const swayAngleZ = Math.sin(tSec * swaySpeedX) * swayAmtX * (1 + speechEnergy * 0.5);
 
-        // --- Procedural Animation for Static / Unrigged Models ---
-        if (charGroupRef.current.userData.isStaticModel) {
+        // --- Procedural Animation for Static / Unrigged Models or Missing Jaw Fallback ---
+        if (charGroupRef.current.userData.isStaticModel || (!charGroupRef.current.userData.hasJaw && animState === 'speaking')) {
           // 1. Gentle breathing bob (vertical position)
-          charGroupRef.current.position.y += breathY * 1.5;
-          
-          // 2. Gentle breathing chest/body scale expansion
-          const breatheScale = 1 + breathY * 0.4;
-          charGroupRef.current.scale.setScalar(currentScale * scaleFactor * breatheScale);
+          if (charGroupRef.current.userData.isStaticModel) {
+            charGroupRef.current.position.y += breathY * 1.5;
+            // 2. Gentle breathing chest/body scale expansion
+            const breatheScale = 1 + breathY * 0.4;
+            charGroupRef.current.scale.setScalar(currentScale * scaleFactor * breatheScale);
+            // 4. Idle body sway
+            charGroupRef.current.rotation.z += swayAngleZ * 0.7;
+            charGroupRef.current.rotation.y += Math.sin(tSec * swaySpeedX * 0.5) * swayAmtX * 0.5;
+          }
           
           // 3. Speaking bob & rumble (forward pitch + side vibration + down-bob + forward thrust)
           if (animState === 'speaking') {
@@ -1120,10 +1125,6 @@ export default function ARScene({ onCanvasReady }: ARSceneProps) {
             charGroupRef.current.position.y -= mouthOpenAmt * 0.03;
             charGroupRef.current.position.z += mouthOpenAmt * 0.05;
           }
-          
-          // 4. Idle body sway
-          charGroupRef.current.rotation.z += swayAngleZ * 0.7;
-          charGroupRef.current.rotation.y += Math.sin(tSec * swaySpeedX * 0.5) * swayAmtX * 0.5;
         }
 
         const spineBone = charGroupRef.current.getObjectByName('Spine') || charGroupRef.current.getObjectByName('spine') || charGroupRef.current.getObjectByName('spine_01') || charGroupRef.current.getObjectByName('torsoMesh');
@@ -1221,7 +1222,19 @@ export default function ARScene({ onCanvasReady }: ARSceneProps) {
         }
         
         const jawBoneName = charData.meta?.jawBone;
-        const jawMesh = (jawBoneName ? charGroupRef.current.getObjectByName(jawBoneName) : null) || charGroupRef.current.getObjectByName('jawMesh') || charGroupRef.current.getObjectByName('Jaw') || charGroupRef.current.getObjectByName('jaw');
+        let jawMesh: THREE.Object3D | null = (jawBoneName ? charGroupRef.current.getObjectByName(jawBoneName) : null) || charGroupRef.current.getObjectByName('jawMesh') || charGroupRef.current.getObjectByName('Jaw') || charGroupRef.current.getObjectByName('jaw') || null;
+        
+        if (!jawMesh) {
+          charGroupRef.current.traverse((child) => {
+            if (!jawMesh && (child.type === 'Bone' || (child as any).isBone)) {
+              const nameLower = child.name.toLowerCase();
+              if (nameLower.includes('jaw') || nameLower.includes('mouth') || nameLower.includes('teeth_lower')) {
+                jawMesh = child;
+              }
+            }
+          });
+        }
+
         if (jawMesh && jawMesh.name === 'jawMesh') {
            jawMesh.position.y = -0.16 - mouthOpenAmt * 0.045;
         } else if (jawMesh) {

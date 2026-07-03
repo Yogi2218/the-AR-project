@@ -210,7 +210,7 @@ export default function SetupPage() {
     window.open(controlUrl, '_blank', 'width=1100,height=750,status=no,menubar=no,toolbar=no');
     
     // Redirect current tab to clean Projector Mode view
-    router.push(`/projector/${params.id}`);
+    window.location.href = `/projector/${params.id}`;
   };
 
   if (!character) {

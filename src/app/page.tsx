@@ -16,16 +16,11 @@ const FEATURES = [
 ];
 
 const CHARACTERS = [
-  { emoji: '🧪', name: 'Albert Einstein',  subject: 'Physics & Relativity',   cat: 'Scientist',  color: 'cat-scientist' },
-  { emoji: '🕊️', name: 'Mahatma Gandhi',  subject: 'History & Non-Violence',  cat: 'Leader',     color: 'cat-leader'    },
-  { emoji: '🦕', name: 'Tyrannosaurus Rex', subject: 'Prehistoric Life',       cat: 'Extinct',    color: 'cat-extinct'   },
-  { emoji: '🦁', name: 'African Lion',     subject: 'Wildlife & Ecosystems',   cat: 'Animal',     color: 'cat-animal'    },
-  { emoji: '🦅', name: 'Bald Eagle',       subject: 'Birds & Migration',       cat: 'Bird',       color: 'cat-bird'      },
-  { emoji: '🔭', name: 'Marie Curie',      subject: 'Chemistry & Radioactivity', cat: 'Scientist', color: 'cat-scientist' },
+  { emoji: '🐅', name: 'Bengal Tiger',     subject: 'Wildlife & Ecosystems',   cat: 'Animal',     color: 'cat-animal'    }
 ];
 
 const STATS = [
-  { value: '10+',  label: 'Pre-built Characters' },
+  { value: '1+',  label: 'Pre-built Characters' },
   { value: '0₹',   label: 'Software License Cost' },
   { value: '< 5s', label: 'Session Launch Time' },
   { value: '100%', label: 'Browser-Based' },
@@ -177,7 +172,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl font-bold text-white mb-4">
-              10 Pre-Built Educational Characters
+              Pre-Built Educational Characters
             </h2>
             <p style={{ color: 'var(--text-secondary)' }}>Each with full Q&A scripts, voice profiles, and personality</p>
           </div>

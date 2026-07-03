@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { isEmailDomainAllowed } from '@/lib/supabase/auth-helpers';
 
 export async function POST(request: Request) {
   try {
@@ -7,6 +8,10 @@ export async function POST(request: Request) {
 
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Valid email is required.' }, { status: 400 });
+    }
+
+    if (!isEmailDomainAllowed(email)) {
+      return NextResponse.json({ error: 'Email domain not allowed. Please use an authorized email.' }, { status: 403 });
     }
 
     const supabase = createClient(

@@ -97,13 +97,29 @@ export default function ProjectorPage() {
         const activeChar = char || character;
         if (activeChar) {
           setSubtitle(activeChar.introMonologue);
-          speechEngine?.speak({
-            text: activeChar.introMonologue,
-            voiceProfile: activeChar.voiceProfile,
-            characterId: activeChar.id,
-            onStart: () => { setIsSpeaking(true); setMouthOpen(0.6); },
-            onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
-          });
+          
+          const playSpeech = () => {
+            speechEngine?.speak({
+              text: activeChar.introMonologue,
+              voiceProfile: activeChar.voiceProfile,
+              characterId: activeChar.id,
+              onStart: () => { setIsSpeaking(true); setMouthOpen(0.6); },
+              onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
+            });
+          };
+
+          if (activeChar.category === 'animal') {
+            const soundUrl = activeChar.id === 'lion'
+              ? 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Panthera_leo_roar.ogg'
+              : 'https://upload.wikimedia.org/wikipedia/commons/8/81/Tiger_Growl.ogg';
+            const audioSfx = new Audio(soundUrl);
+            audioSfx.volume = 0.8;
+            audioSfx.play().catch(e => console.warn('SFX failed:', e));
+            // Delay speech slightly to let the roar play
+            setTimeout(playSpeech, 1500);
+          } else {
+            playSpeech();
+          }
         }
       } else if (type === 'STOP_SPEAKING') {
         speechEngine?.stop();

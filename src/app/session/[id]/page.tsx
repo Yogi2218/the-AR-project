@@ -122,7 +122,7 @@ export default function SessionPage() {
     startSession(char, 'scripted');
 
     // Speak intro after short delay
-    setTimeout(() => {
+    const introTimer = setTimeout(() => {
       setSubtitle(char.introMonologue);
       if (isPopup) {
         // Broadcast intro instead of speaking locally
@@ -136,17 +136,36 @@ export default function SessionPage() {
           setMouthOpen(0);
         }, 6000);
       } else {
-        speechEngine.speak({
-          text: char.introMonologue,
-          voiceProfile: char.voiceProfile,
-          onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
-          onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
-        });
+        const playSpeech = () => {
+          speechEngine.speak({
+            text: char.introMonologue,
+            voiceProfile: char.voiceProfile,
+            characterId: char.id,
+            onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
+            onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
+          });
+        };
+
+        if (char.category === 'animal') {
+          const soundUrl = char.id === 'lion'
+            ? 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Panthera_leo_roar.ogg'
+            : 'https://upload.wikimedia.org/wikipedia/commons/8/81/Tiger_Growl.ogg';
+          const audioSfx = new Audio(soundUrl);
+          audioSfx.volume = 0.8;
+          audioSfx.play().catch(e => console.warn('SFX failed:', e));
+          setTimeout(playSpeech, 1500);
+        } else {
+          playSpeech();
+        }
       }
     }, 1500);
 
     setShowAR(true);
-    return () => { speechEngine.stop(); endSession(); };
+    return () => { 
+      clearTimeout(introTimer);
+      speechEngine.stop(); 
+      endSession(); 
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id, isPopup]);
 
