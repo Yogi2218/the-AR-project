@@ -79,19 +79,34 @@ export default function ProjectorPage() {
         const activeChar = char || character;
         if (activeChar) {
           setSubtitle(line.answer);
-          speechEngine?.speak({
-            text: line.answer,
-            voiceProfile: activeChar.voiceProfile,
-            characterId: activeChar.id,
-            preRecordedAudio: line.audio,
-            preRecordedAlignment: line.alignment,
-            onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
-            onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
-            onWord:  (word) => {
-              const v = word.match(/[aeiouáéíóú]/gi)?.length ?? 1;
-              setMouthOpen(Math.min(0.9, v * 0.3));
-            }
-          });
+          
+          const playLineSpeech = () => {
+            speechEngine?.speak({
+              text: line.answer,
+              voiceProfile: activeChar.voiceProfile,
+              characterId: activeChar.id,
+              preRecordedAudio: line.audio,
+              preRecordedAlignment: line.alignment,
+              onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
+              onEnd:   () => { setIsSpeaking(false); setMouthOpen(0); },
+              onWord:  (word) => {
+                const v = word.match(/[aeiouáéíóú]/gi)?.length ?? 1;
+                setMouthOpen(Math.min(0.9, v * 0.3));
+              }
+            });
+          };
+
+          if (activeChar.category === 'animal') {
+            const soundUrl = activeChar.id === 'lion'
+              ? 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Panthera_leo_roar.ogg'
+              : 'https://upload.wikimedia.org/wikipedia/commons/8/81/Tiger_Growl.ogg';
+            const audioSfx = new Audio(soundUrl);
+            audioSfx.volume = 0.8;
+            audioSfx.play().catch(e => console.warn('SFX failed:', e));
+            setTimeout(playLineSpeech, 1200);
+          } else {
+            playLineSpeech();
+          }
         }
       } else if (type === 'SPEAK_INTRO') {
         const activeChar = char || character;

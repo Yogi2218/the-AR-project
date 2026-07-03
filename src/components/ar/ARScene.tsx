@@ -975,7 +975,7 @@ export default function ARScene({ onCanvasReady }: ARSceneProps) {
         charData.lastState = animState;
 
         // Audio Energy & Speech Pause Simulation
-        const mouthOpenAmt = storeState.faceMorphs.mouthOpen || storeState.mouthOpenAmount || 0;
+        const mouthOpenAmt = Math.max(storeState.faceMorphs.mouthOpen || 0, storeState.mouthOpenAmount || 0);
         let speechEnergy = 0;
         let isPaused = false;
 
