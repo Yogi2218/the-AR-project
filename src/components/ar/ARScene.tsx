@@ -553,6 +553,33 @@ export default function ARScene({ onCanvasReady }: ARSceneProps) {
               }
             }
           }
+
+          // Fake Jaw Shader for Static Animal Models (applies to standard and converted materials)
+          if (model.userData.isStaticModel && char.category === 'animal') {
+             const mList = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+             mList.forEach((m) => {
+                const stdMat = m as THREE.MeshStandardMaterial;
+                stdMat.onBeforeCompile = (shader) => {
+                   shader.uniforms.mouthOpenAmt = { value: 0 };
+                   stdMat.userData = stdMat.userData || {};
+                   stdMat.userData.shader = shader;
+                   
+                   shader.vertexShader = `
+                     uniform float mouthOpenAmt;
+                     ${shader.vertexShader}
+                   `.replace(
+                     `#include <begin_vertex>`,
+                     `
+                     #include <begin_vertex>
+                     // Fake Jaw Displacement for Static Quadruped Head (assuming head is at +X)
+                     float jawMask = smoothstep(0.15, 0.45, position.x) * smoothstep(0.25, 0.05, position.y);
+                     transformed.y -= jawMask * mouthOpenAmt * 0.12;
+                     transformed.x -= jawMask * mouthOpenAmt * 0.03;
+                     `
+                   );
+                };
+             });
+          }
         }
       }));
 
@@ -1125,6 +1152,21 @@ export default function ARScene({ onCanvasReady }: ARSceneProps) {
             charGroupRef.current.position.y -= mouthOpenAmt * 0.03;
             charGroupRef.current.position.z += mouthOpenAmt * 0.05;
           }
+        }
+
+        // --- Fake Jaw Shader Uniform Update ---
+        if (charGroupRef.current.userData.isStaticModel && character?.category === 'animal') {
+          charGroupRef.current.traverse((child) => {
+             if ((child as THREE.Mesh).isMesh) {
+                const mesh = child as THREE.Mesh;
+                const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                mats.forEach(m => {
+                   if (m.userData && m.userData.shader) {
+                      m.userData.shader.uniforms.mouthOpenAmt.value = mouthOpenAmt;
+                   }
+                });
+             }
+          });
         }
 
         const spineBone = charGroupRef.current.getObjectByName('Spine') || charGroupRef.current.getObjectByName('spine') || charGroupRef.current.getObjectByName('spine_01') || charGroupRef.current.getObjectByName('torsoMesh');
