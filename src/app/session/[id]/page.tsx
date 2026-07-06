@@ -320,19 +320,29 @@ export default function SessionPage() {
 
   // ── Projector mode ───────────────────────────────────────
   const handleProjectorMode = useCallback(() => {
-    if (projWin && !projWin.closed) {
-      projWin.close();
-      setProjWin(null);
-      toggleProjectorMode();
-      return;
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+      if (!projectorMode) toggleProjectorMode();
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+      if (projectorMode) toggleProjectorMode();
     }
-    const url = `/projector/${params.id}`;
-    const w = window.open(url, '_blank',
-      'toolbar=no,location=no,status=no,menubar=no,fullscreen=yes,width=1920,height=1080'
-    );
-    setProjWin(w);
-    toggleProjectorMode();
-  }, [projWin, params.id, toggleProjectorMode]);
+  }, [projectorMode, toggleProjectorMode]);
+
+  // Sync fullscreen state if user exits via ESC
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && projectorMode) {
+        toggleProjectorMode();
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [projectorMode, toggleProjectorMode]);
 
   // ── Mute toggle ──────────────────────────────────────────
   const toggleMute = useCallback(() => {
@@ -402,7 +412,7 @@ export default function SessionPage() {
     <div className="h-screen overflow-hidden flex flex-col" style={{ background: '#050710' }}>
 
       {/* ── Top Bar ─────────────────────────────────────────── */}
-      {!fullscreenCamera && (
+      {!fullscreenCamera && !projectorMode && (
         <header className="glass-dark flex items-center gap-3 px-4 py-3 z-30"
                 style={{ borderBottom: '1px solid rgba(98,120,248,0.2)' }}>
           <button onClick={() => router.push('/dashboard')}
@@ -463,7 +473,7 @@ export default function SessionPage() {
       <div className="flex-1 flex overflow-hidden relative">
 
         {/* Permanent Left Sidebar for Calibration */}
-        {!fullscreenCamera && calibrationOpen && (
+        {!fullscreenCamera && !projectorMode && calibrationOpen && (
           <div className="w-80 h-full glass-dark border-r border-indigo-500/20 flex flex-col z-20 shadow-2xl overflow-hidden"
                style={{ borderRight: '1px solid rgba(98,120,248,0.15)' }}>
             <div className="flex items-center justify-between p-4 border-b border-white/10 bg-black/20">
@@ -890,7 +900,7 @@ export default function SessionPage() {
           )}
 
           {/* Centering crosshair overlay */}
-          {showCenteringGuide && !fullscreenCamera && (
+          {showCenteringGuide && !fullscreenCamera && !projectorMode && (
             <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
               {/* Horizontal line */}
               <div className="absolute w-full h-[1px] bg-cyan-500/40" />
@@ -904,7 +914,7 @@ export default function SessionPage() {
           )}
 
           {/* Floating Calibration Toolbar Panel */}
-          {!fullscreenCamera && (
+          {!fullscreenCamera && !projectorMode && (
             <div className="absolute top-4 left-4 z-20 flex flex-row items-center gap-2 max-w-[90vw]">
               <button
                 type="button"
@@ -944,8 +954,21 @@ export default function SessionPage() {
             </button>
           )}
 
+          {/* Exit Projector Mode button */}
+          {projectorMode && (
+            <button
+              onClick={handleProjectorMode}
+              className="absolute top-4 left-4 z-50 p-2 flex items-center gap-1.5 rounded-full glass-dark border text-white hover:bg-white/10 transition-all text-xs font-semibold shadow-lg"
+              style={{ borderColor: 'rgba(98, 120, 248, 0.4)' }}
+              title="Exit Projector Mode"
+            >
+              <Minimize2 size={16} className="text-indigo-400" />
+              <span className="text-indigo-400">Exit Projector Mode</span>
+            </button>
+          )}
+
           {/* AR bracket overlay */}
-          {!fullscreenCamera && (
+          {!fullscreenCamera && !projectorMode && (
             <div className="ar-overlay pointer-events-none">
               <div className="absolute top-8 left-8 bottom-8 right-8">
                 <div className="relative w-full h-full">
@@ -960,7 +983,7 @@ export default function SessionPage() {
           )}
 
           {/* Character state badge */}
-          {!fullscreenCamera && (
+          {!fullscreenCamera && !projectorMode && (
             <div className="absolute top-4 right-4 z-10">
               <div className="px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2"
                    style={{
@@ -975,10 +998,10 @@ export default function SessionPage() {
           )}
 
           {/* Teacher Correction UI */}
-          {!fullscreenCamera && <TeacherCorrectionUI onRegenerate={handleQuestion} />}
+          {!fullscreenCamera && !projectorMode && <TeacherCorrectionUI onRegenerate={handleQuestion} />}
 
           {/* Text input at bottom */}
-          {!fullscreenCamera && (
+          {!fullscreenCamera && !projectorMode && (
             <div className="absolute bottom-4 left-4 right-4 z-10">
               <form onSubmit={handleTextSubmit} className="flex gap-2">
                 <input
@@ -997,7 +1020,7 @@ export default function SessionPage() {
         </div>
 
         {/* ── Right Panel ─────────────────────────────────────── */}
-        {!fullscreenCamera && (
+        {!fullscreenCamera && !projectorMode && (
           <aside className="w-80 flex-shrink-0 flex flex-col glass-dark overflow-y-auto"
                  style={{ borderLeft: '1px solid rgba(98,120,248,0.15)' }}>
 
@@ -1113,13 +1136,13 @@ export default function SessionPage() {
                     </div>
                     <ol className="text-xs space-y-2" style={{ color: 'var(--text-secondary)' }}>
                       <li>1. Connect HDMI to projector</li>
-                      <li>2. Set projector as <strong style={{ color: 'white' }}>Extended Display</strong></li>
-                      <li>3. Click <strong style={{ color: 'white' }}>Projector</strong> button above</li>
-                      <li>4. Move the new window to projector screen & fullscreen</li>
+                      <li>2. Set projector as <strong style={{ color: 'white' }}>Extended Display</strong> (or Duplicate)</li>
+                      <li>3. Move this window to the projector screen</li>
+                      <li>4. Click <strong style={{ color: 'white' }}>Projector Mode</strong> below to go fullscreen</li>
                     </ol>
                     <button onClick={handleProjectorMode} className="btn-primary w-full text-sm py-2 flex items-center justify-center gap-2">
                       <MonitorPlay size={14} />
-                      {projectorMode ? 'Close Projector Window' : 'Open Projector Mode'}
+                      {projectorMode ? 'Exit Projector Mode' : 'Enter Projector Mode'}
                     </button>
                   </div>
                 </motion.div>
