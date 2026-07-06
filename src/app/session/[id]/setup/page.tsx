@@ -204,13 +204,9 @@ export default function SetupPage() {
     speechEngine?.stop();
     endSession();
     
-    // Open control presenter view in a new window/popup
-    const tplQuery = selectedTemplate ? `&template=${selectedTemplate.id}` : '';
-    const controlUrl = `/session/${params.id}?popup=true${tplQuery}`;
-    window.open(controlUrl, '_blank', 'width=1100,height=750,status=no,menubar=no,toolbar=no');
-    
-    // Redirect current tab to clean Projector Mode view
-    window.location.href = `/projector/${params.id}`;
+    // Redirect current tab to the main session view (which now handles projector mode natively)
+    const tplQuery = selectedTemplate ? `?template=${selectedTemplate.id}` : '';
+    window.location.href = `/session/${params.id}${tplQuery}`;
   };
 
   if (!character) {
