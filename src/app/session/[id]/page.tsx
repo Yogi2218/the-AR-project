@@ -114,6 +114,7 @@ export default function SessionPage() {
   // Custom scripts selectors
   const [customScripts, setCustomScripts] = useState<any[]>([]);
   const [selectedScriptId, setSelectedScriptId] = useState<string>('default');
+  const [customIntro, setCustomIntro] = useState<string | null>(null);
 
   // ── Load character & start session ──────────────────────
   useEffect(() => {
@@ -233,7 +234,7 @@ export default function SessionPage() {
     return () => channel.close();
   }, [activeScript]);
 
-  // Keyboard shortcut triggers (keys 1-9) for scripts
+  // Keyboard shortcut triggers (keys 1-9) for scripts, 0 for introduction
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (
@@ -244,7 +245,32 @@ export default function SessionPage() {
       }
       
       const num = parseInt(e.key, 10);
-      if (num >= 1 && num <= 9) {
+      if (num === 0) {
+        const introText = customIntro || character?.introMonologue;
+        if (introText) {
+          const channel = new BroadcastChannel('eduar-session');
+          if (isPopup) {
+            channel.postMessage({ type: 'SPEAK_INTRO', text: introText });
+            setSubtitle(introText);
+            setIsSpeaking(true);
+            const duration = Math.min(8000, introText.length * 70);
+            setTimeout(() => {
+              setIsSpeaking(false);
+              setMouthOpen(0);
+            }, duration);
+          } else {
+            setSubtitle(introText);
+            speechEngine.speak({
+              text: introText,
+              voiceProfile: character?.voiceProfile || { pitch: 1, rate: 0.9, volume: 1.0, accent: 'en-IN' },
+              characterId: character?.id,
+              onStart: () => { setIsSpeaking(true); setMouthOpen(0.5); },
+              onEnd: () => { setIsSpeaking(false); setMouthOpen(0); },
+            });
+          }
+          channel.close();
+        }
+      } else if (num >= 1 && num <= 9) {
         const line = activeScript[num - 1];
         if (line) {
           const channel = new BroadcastChannel('eduar-session');
@@ -274,7 +300,7 @@ export default function SessionPage() {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeScript, character, isPopup, setIsSpeaking, setMouthOpen, setSubtitle]);
+  }, [activeScript, character, isPopup, setIsSpeaking, setMouthOpen, setSubtitle, customIntro]);
 
   // Load custom scripts list
   useEffect(() => {
@@ -375,9 +401,11 @@ export default function SessionPage() {
 
     if (val === 'default') {
       setActiveScript(character.scripts);
+      setCustomIntro(null);
     } else {
       const found = customScripts.find((s) => s.id === val);
       if (found) {
+        setCustomIntro(found.introduction || null);
         const mapped = found.pairs.map((p: any, idx: number) => ({
           id: p.id || `custom_${idx}`,
           question: p.question,

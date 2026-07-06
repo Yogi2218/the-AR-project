@@ -17,6 +17,7 @@ interface SavedScript {
   id: string;
   characterId: string;
   name: string;
+  introduction?: string;
   pairs: QAPair[];
   createdAt: string;
 }
@@ -32,6 +33,7 @@ const DEFAULT_QA = (): QAPair => ({
 export default function ScriptsPage() {
   const [selectedChar, setSelectedChar] = useState(CHARACTERS[0].id);
   const [scriptName,   setScriptName]   = useState('');
+  const [introduction, setIntroduction] = useState('');
   const [pairs,        setPairs]        = useState<QAPair[]>([DEFAULT_QA()]);
   const [expandedId,   setExpandedId]   = useState<string>('');
   const [saved,        setSaved]        = useState(false);
@@ -81,6 +83,7 @@ export default function ScriptsPage() {
     const freshPair = DEFAULT_QA();
     setEditingId(null);
     setScriptName('');
+    setIntroduction('');
     setSelectedChar(CHARACTERS[0].id);
     setPairs([freshPair]);
     setExpandedId(freshPair.id);
@@ -89,6 +92,7 @@ export default function ScriptsPage() {
   const handleLoad = (script: SavedScript) => {
     setEditingId(script.id);
     setScriptName(script.name);
+    setIntroduction(script.introduction || '');
     setSelectedChar(script.characterId);
     setPairs(script.pairs);
     if (script.pairs.length > 0) {
@@ -102,6 +106,7 @@ export default function ScriptsPage() {
       id: idToUse,
       characterId: selectedChar,
       name: scriptName || 'Untitled Script',
+      introduction,
       pairs,
       createdAt: new Date().toISOString(),
     };
@@ -144,6 +149,7 @@ export default function ScriptsPage() {
   };
 
   const addPair = (focusField: 'question' | 'answer') => {
+    if (pairs.length >= 9) return;
     const newP = DEFAULT_QA();
     setPairs((p) => [...p, newP]);
     setExpandedId(newP.id);
@@ -177,7 +183,7 @@ export default function ScriptsPage() {
   };
 
   const handleExport = () => {
-    const script = { characterId: selectedChar, name: scriptName || 'Untitled Script', pairs };
+    const script = { characterId: selectedChar, name: scriptName || 'Untitled Script', introduction, pairs };
     const blob = new Blob([JSON.stringify(script, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -330,6 +336,17 @@ export default function ScriptsPage() {
               </div>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">Character Introduction (Optional)</label>
+              <textarea
+                placeholder="Hi everyone! I am..."
+                value={introduction}
+                onChange={(e) => setIntroduction(e.target.value)}
+                rows={3}
+                className="input-field resize-none"
+              />
+            </div>
+
             {/* Character preview */}
             <div className="flex items-center gap-3 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
               <span className="text-3xl">{char.emoji}</span>
@@ -349,13 +366,15 @@ export default function ScriptsPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => addPair('question')}
-                  className="btn-secondary flex items-center gap-1.5 text-xs py-1.5 px-3"
+                  disabled={pairs.length >= 9}
+                  className="btn-secondary flex items-center gap-1.5 text-xs py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus size={14} /> Add Question
                 </button>
                 <button
                   onClick={() => addPair('answer')}
-                  className="btn-secondary flex items-center gap-1.5 text-xs py-1.5 px-3"
+                  disabled={pairs.length >= 9}
+                  className="btn-secondary flex items-center gap-1.5 text-xs py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus size={14} /> Add Answer
                 </button>
