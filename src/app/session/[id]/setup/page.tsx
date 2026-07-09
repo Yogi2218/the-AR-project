@@ -584,12 +584,21 @@ export default function SetupPage() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">System Prompt (AI persona)</label>
+                          <div className="flex justify-between items-center">
+                            <label className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">System Prompt (AI persona)</label>
+                            <button
+                              type="button"
+                              onClick={() => setNewScriptSystemPrompt(`You are ${character.name}.\nPersonality: ${character.personality}\nSpeaking Style: ${character.speakingStyle}\nTeaching Style: ${character.teachingStyle}`)}
+                              className="text-[10px] flex items-center gap-1 text-emerald-400 hover:text-emerald-300 font-semibold"
+                            >
+                              Load Default Persona
+                            </button>
+                          </div>
                           <textarea
-                            placeholder="e.g. 'You are teaching about gravity. Answer questions simply.'"
+                            placeholder="e.g. 'You are teaching about gravity. Answer questions simply.' (Leave empty to use default)"
                             value={newScriptSystemPrompt}
                             onChange={(e) => setNewScriptSystemPrompt(e.target.value)}
-                            rows={2}
+                            rows={3}
                             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
                           />
                         </div>

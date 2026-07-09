@@ -56,27 +56,31 @@ export default function ScriptsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadSavedScripts = () => {
-    if (typeof window === 'undefined') return;
-    const list: SavedScript[] = [];
-    const seen = new Set<string>();
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('script_') && !seen.has(key)) {
-        seen.add(key);
-        try {
-          const val = localStorage.getItem(key);
-          if (val) {
-            // Guarantee that key overrides any internal id to prevent collisions
-            list.push({ ...JSON.parse(val), id: key });
-          }
-        } catch (e) {
-          console.warn('Failed to parse script:', key, e);
-        }
+  const loadSavedScripts = async () => {
+    try {
+      const res = await fetch('/api/templates');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.templates) {
+        const list: SavedScript[] = data.templates.map((t: any) => ({
+          id: t.id,
+          characterId: t.character_id,
+          name: t.title,
+          introduction: t.script?.introduction || t.script?.systemPrompt || '',
+          pairs: (t.script?.questions || []).map((q: any, i: number) => ({
+            id: `q_${t.id}_${i}`,
+            question: q.q || '',
+            keywords: q.keywords || '',
+            answer: q.a || '',
+            followUp: q.followUp || ''
+          })),
+          createdAt: t.created_at
+        }));
+        setSavedScripts(list);
       }
+    } catch (e) {
+      console.error('Failed to load scripts:', e);
     }
-    list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    setSavedScripts(list);
   };
 
   const handleNew = () => {
@@ -100,45 +104,89 @@ export default function ScriptsPage() {
     }
   };
 
-  const handleSave = () => {
-    const idToUse = editingId || `script_${Date.now()}`;
-    const script = {
-      id: idToUse,
-      characterId: selectedChar,
-      name: scriptName || 'Untitled Script',
-      introduction,
-      pairs,
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem(idToUse, JSON.stringify(script));
-    setEditingId(idToUse);
+  const handleSave = async () => {
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    loadSavedScripts();
-  };
-
-  const handleDuplicate = (script: SavedScript, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const newId = `script_${Date.now()}`;
-    const duplicated = {
-      ...script,
-      id: newId, // Update the ID inside the duplicated object
-      name: `${script.name} - Copy`,
-      createdAt: new Date().toISOString(),
+    const scriptPayload = {
+      systemPrompt: introduction,
+      introduction: introduction,
+      questions: pairs.map(p => ({
+        q: p.question,
+        a: p.answer,
+        keywords: p.keywords,
+        followUp: p.followUp
+      }))
     };
-    localStorage.setItem(newId, JSON.stringify(duplicated));
-    loadSavedScripts();
+
+    try {
+      const res = await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingId,
+          character_id: selectedChar,
+          title: scriptName || 'Untitled Script',
+          script: scriptPayload
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.id) setEditingId(data.id);
+        setTimeout(() => setSaved(false), 2000);
+        await loadSavedScripts();
+      } else {
+        setSaved(false);
+        alert('Failed to save script');
+      }
+    } catch (e) {
+      console.error('Failed to save script:', e);
+      setSaved(false);
+    }
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDuplicate = async (script: SavedScript, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const scriptPayload = {
+      systemPrompt: script.introduction,
+      introduction: script.introduction,
+      questions: script.pairs.map(p => ({
+        q: p.question,
+        a: p.answer,
+        keywords: p.keywords,
+        followUp: p.followUp
+      }))
+    };
+
+    try {
+      await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          character_id: script.characterId,
+          title: `${script.name} - Copy`,
+          script: scriptPayload
+        })
+      });
+      await loadSavedScripts();
+    } catch (e) {
+      console.error('Failed to duplicate script:', e);
+    }
+  };
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (deletingId === id) {
-      localStorage.removeItem(id);
-      if (editingId === id) {
-        handleNew();
+      try {
+        await fetch(`/api/templates?id=${id}`, { method: 'DELETE' });
+        if (editingId === id) {
+          handleNew();
+        }
+        setDeletingId(null);
+        await loadSavedScripts();
+      } catch (e) {
+        console.error('Failed to delete script:', e);
       }
-      setDeletingId(null);
-      loadSavedScripts();
     } else {
       setDeletingId(id);
       // Auto-reset after 3 seconds if not confirmed
@@ -337,12 +385,21 @@ export default function ScriptsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Character Introduction (Optional)</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-white">System Prompt / Persona (Optional)</label>
+                <button
+                  type="button"
+                  onClick={() => setIntroduction(`You are ${char.name}.\nPersonality: ${char.personality}\nSpeaking Style: ${char.speakingStyle}\nTeaching Style: ${char.teachingStyle}`)}
+                  className="text-xs flex items-center gap-1 text-emerald-400 hover:text-emerald-300 font-semibold"
+                >
+                  Load Default Persona
+                </button>
+              </div>
               <textarea
-                placeholder="Hi everyone! I am..."
+                placeholder="e.g. 'You are teaching about gravity. Answer questions simply.' (Leave empty to use default)"
                 value={introduction}
                 onChange={(e) => setIntroduction(e.target.value)}
-                rows={3}
+                rows={4}
                 className="input-field resize-none"
               />
             </div>

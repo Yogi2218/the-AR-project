@@ -77,7 +77,11 @@ export async function POST(request: Request) {
 
       // If answer is unchanged and has audio, reuse it
       if (oldQa && oldQa.a === qa.a && oldQa.audio) {
-        cleanQuestions.push(oldQa);
+        cleanQuestions.push({
+          ...oldQa,
+          keywords: qa.keywords || oldQa.keywords,
+          followUp: qa.followUp || oldQa.followUp
+        });
       } else {
         // Answer changed or new - pre-record TTS audio
         try {
@@ -95,29 +99,33 @@ export async function POST(request: Request) {
             cleanQuestions.push({
               q: qa.q,
               a: qa.a,
+              keywords: qa.keywords,
+              followUp: qa.followUp,
               audio: ttsData.audio,
               alignment: ttsData.alignment
             });
           } else {
-            cleanQuestions.push({ q: qa.q, a: qa.a });
+            cleanQuestions.push({ q: qa.q, a: qa.a, keywords: qa.keywords, followUp: qa.followUp });
           }
         } catch (e) {
           console.error('Failed to pre-generate audio for QA:', e);
-          cleanQuestions.push({ q: qa.q, a: qa.a });
+          cleanQuestions.push({ q: qa.q, a: qa.a, keywords: qa.keywords, followUp: qa.followUp });
         }
       }
     }
 
     const finalScript = {
-      systemPrompt: script.systemPrompt || 'You are an educational AI character.',
+      systemPrompt: script.systemPrompt || script.introduction || 'You are an educational AI character.',
+      introduction: script.introduction || '',
       questions: cleanQuestions,
       editCount,
       status
     };
 
+    let resultId = id;
     if (id) {
       // Update existing template
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('teacher_templates')
         .update({
           character_id,
@@ -127,12 +135,15 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select('id')
+        .single();
 
       if (error) throw error;
+      if (data) resultId = data.id;
     } else {
       // Create new template
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('teacher_templates')
         .insert({
           user_id: user.id,
@@ -140,12 +151,15 @@ export async function POST(request: Request) {
           title,
           script: finalScript,
           is_shared: !!is_shared,
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
+      if (data) resultId = data.id;
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, id: resultId });
   } catch (err: any) {
     console.error('[templates-post] Error:', err.message || err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
