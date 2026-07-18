@@ -98,7 +98,7 @@ export const CHARACTERS: Character[] = [
     catClass: 'cat-animal',
     thumbnailColor: 'from-orange-500 to-red-600',
     voiceProfile: { pitch: 0.6, rate: 0.8, volume: 1.0, accent: 'en-IN' },
-    introMonologue: "Welcome to my jungle. I am the Bengal Tiger. I move through the tall grass unseen, but right now, I have stepped into the light to answer your questions. Speak quickly.",
+    introMonologue: "Roarrr! Namaste, my friends from Children's Academy, Thane! I am the Royal Bengal Tiger, your AR tiger friend, and I'm so happy to be with you today on International Tiger Day! I came from the forests of India, where tigers like me have lived for thousands of years. We are the guardians of the jungle when we are healthy, the whole forest is healthy: the trees, the rivers, and every animal that lives there. That's why I'm excited to spend today with you to share my story, answer your questions, and show you how even small actions can help tigers like me survive. So students of Children's Academy, are you ready to be my roar-some friends and protectors? Let's celebrate, learn, and pledge together — for me, and for every tiger yet to come! Roarrr! Happy International Tiger Day!",
     exitMonologue: "The forest calls to me. I must return to the shadows. Protect the forests, and you protect me. Farewell.",
     knowledgeSourceType: 'wildlife',
     speakingStyle: 'Commanding and stealthy with a low rumble',
@@ -126,6 +126,70 @@ export const CHARACTERS: Character[] = [
         gesture: 'nod',
         emotion: 'sad',
       },
+      {
+        id: 'tgr3',
+        question: 'Why is July 29 celebrated as your special day?',
+        keywords: ['july 29', 'special day', 'international tiger day', 'celebrate'],
+        answer: "It's International Tiger Day! It reminds everyone that tigers like me are endangered and need protection.",
+        gesture: 'nod',
+        emotion: 'happy'
+      },
+      {
+        id: 'tgr4',
+        question: 'What do you mean by endangered? Why are there so few tigers left today?',
+        keywords: ['endangered', 'so few left', 'why few tigers'],
+        answer: "Humans have cut down my forest for farms and cities, and some hunt tigers illegally. Only about 5,500 of us are left in the wild.",
+        gesture: 'point',
+        emotion: 'sad'
+      },
+      {
+        id: 'tgr5',
+        question: 'What happens to the forest if tigers disappear?',
+        keywords: ['disappear', 'what happens', 'if tigers disappear', 'without tigers'],
+        answer: "I'm at the top of the food chain. Without me, deer and boar populations grow too fast and eat up all the plants — the whole forest gets unbalanced.",
+        gesture: 'roar',
+        emotion: 'thoughtful'
+      },
+      {
+        id: 'tgr6',
+        question: 'If you could make one rule for humans, what would it be?',
+        keywords: ['one rule', 'rule for humans', 'human rule'],
+        answer: "Never destroy a forest without planting new trees to replace it.",
+        gesture: 'point',
+        emotion: 'thoughtful'
+      },
+      {
+        id: 'tgr7',
+        question: 'What is poaching, and why does it hurt tigers like you? What can a kid like me do?',
+        keywords: ['poaching', 'kid like me do', 'hurt tigers'],
+        answer: "Poaching means hunting animals illegally. People kill tigers to sell our skin and bones, even though it's against the law. It's one of the biggest threats to my survival. You can help me by never buying things made from animal skin, bone, or fur, and tell your friends why it's wrong. Awareness is powerful!",
+        gesture: 'nod',
+        emotion: 'sad'
+      },
+      {
+        id: 'tgr8',
+        question: 'Why is losing forest land so dangerous for tigers?',
+        keywords: ['losing forest land', 'dangerous', 'forest land', 'cut down'],
+        answer: "I need a huge area to hunt in — sometimes over 100 square kilometres! When forests are cut down for farms, roads, or cities, I lose my home and my food.",
+        gesture: 'point',
+        emotion: 'sad'
+      },
+      {
+        id: 'tgr9',
+        question: 'Do tigers and humans ever come into conflict? Why?',
+        keywords: ['conflict', 'tigers and humans', 'come into conflict', 'scares people'],
+        answer: "Yes. As forests shrink, I sometimes wander closer to villages looking for food, and that scares people. This is called human-tiger conflict, and it's sad for both sides.",
+        gesture: 'nod',
+        emotion: 'sad'
+      },
+      {
+        id: 'tgr10',
+        question: 'How can students of Children\'s Academy help you, Sher?',
+        keywords: ['students help', 'children\'s academy help', 'help you sher', 'help', 'sher'],
+        answer: "You can do so much, even from your classroom! Plant a tree or start a small garden on the school campus. Make posters or a wall display for International Tiger Day to teach other students. Save paper — use both sides of your notebook, since paper comes from trees. Never buy or wear anything made from animal skin, fur, or bone. Tell your family what you learned, so more people join in. If you visit a zoo or national park, follow the rules — stay quiet, don't feed the animals, and don't leave litter behind. Every small habit in your school and home adds up to a safer forest for tigers like me!",
+        gesture: 'wave',
+        emotion: 'excited'
+      }
     ]
   },
 ];
